@@ -1,0 +1,26 @@
+{:paths ["src"]
+
+ ;; glitter-uikit is an alternative RENDERER for glitter: glitter owns the
+ ;; Replicant-style reconciler (glitter.core) and the IRender/IMemory protocols
+ ;; (glitter.protocols), and knows nothing about any toolkit; this project
+ ;; supplies AppKit views, the prop/event wiring, and the NSApplication loop.
+ ;;
+ ;; AppKit is NOT declared under :jolt/native — glitter-uikit.ffi dlopens the
+ ;; frameworks itself, guarded to macOS only, mirroring glimmer-uikit.
+ ;;
+ ;; KNOWN LIMITATION: glitter's own deps.edn declares GTK4/GLib/GObject/GIO
+ ;; under :jolt/native, and jolt inherits a dependency's natives transitively
+ ;; and hard-fails in load-natives! before any namespace loads when one is
+ ;; missing. So GTK4 must be installed to run anything here, even though this
+ ;; renderer never calls a GTK function. Verified live, including that an
+ ;; :aliases-scoped :jolt/native is silently ignored, so there is no way to
+ ;; scope it away. The real fix is extracting a natives-free glitter-core the
+ ;; way upstream glimmer did at v0.1.0 — see README.md's Status section.
+ :deps {burinc/glitter {:local/root "../glitter"}}
+
+ ;; Each runnable has its own alias with :main-opts (jolt's -M:alias form needs
+ ;; main-opts). Tasks are thin wrappers so you can run `jolt counter`, etc.
+ :aliases {:test    {:extra-paths ["test" "examples"]
+                     :main-opts ["-m" "glitter-uikit.test-runner"]}}
+
+ :tasks {test "jolt -M:test"}}
