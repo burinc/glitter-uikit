@@ -113,14 +113,36 @@
     (u/set-activation-policy! app u/ACTIVATION-REGULAR)
     (u/set-app-delegate! app w/invoker)
     (let [win (u/window-new title width height)]
-      (on-activate win)
-      (u/window-center! win)
-      (u/window-show! win)
-      (u/activate! app)
-      (when auto-quit-ms (w/auto-quit! app auto-quit-ms))
-      (reset! gui-loop-running? true)
+      ;; CORRECTION (found by P4.T4's main-thread smoke, 2026-08-20): these two
+      ;; resets MUST happen BEFORE on-activate, not after it.
+      ;;
+      ;; glitter.app sets them immediately before g_application_run and that is
+      ;; correct THERE, because its on-activate is a foreign-callable wired to
+      ;; GTK's "activate" signal — it fires from INSIDE the running loop, so the
+      ;; flags are already set by the time it runs. AppKit has no such signal
+      ;; indirection: run* calls on-activate eagerly and directly, before
+      ;; [NSApp run]. Copying glitter's textual ordering without accounting for
+      ;; that difference left both flags unset for the whole of on-activate, so
+      ;; EVERY on-gui call during it took branch 1 (inline) regardless of thread.
+      ;;
+      ;; For a main-thread write that is harmless — branch 2 now covers it and
+      ;; still runs inline, so synchronous read-back after render is unchanged.
+      ;; For a WORKER-thread write — an nREPL eval, a background fetch
+      ;; completing during mount — inline meant mutating AppKit off the main
+      ;; thread, which is exactly the violation the three-way branch exists to
+      ;; prevent. With the flags set first, that case takes branch 3 and is
+      ;; marshalled onto the run loop, draining once [NSApp run] starts.
+      ;;
+      ;; The try now spans on-activate too, so the finally still clears the flag
+      ;; if on-activate throws.
       (reset! main-thread (Thread/currentThread))
+      (reset! gui-loop-running? true)
       (try
+        (on-activate win)
+        (u/window-center! win)
+        (u/window-show! win)
+        (u/activate! app)
+        (when auto-quit-ms (w/auto-quit! app auto-quit-ms))
         (u/run-app! app)
         (finally (reset! gui-loop-running? false))))))
 
