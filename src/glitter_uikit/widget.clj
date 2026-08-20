@@ -513,6 +513,34 @@
   (when-let [[halign valign] (get @alignments child)]
     (u/stack-alignment! parent (->stack-alignment halign valign (u/stack-orientation parent)))))
 
+;; NSNotFound is NSIntegerMax (9223372036854775807), NOT NSUIntegerMax/-1 —
+;; measured, not assumed. Feeding NSNotFound+1 to insertArrangedSubview:atIndex:
+;; raises an uncaught NSException that ABORTS THE PROCESS, and a Clojure
+;; `catch :default` does not intercept it (ObjC exceptions do not unwind into
+;; Scheme). So every index read goes through here and yields nil for "absent",
+;; never a sentinel that can reach arithmetic.
+(def ^:private NS-NOT-FOUND 9223372036854775807)
+
+(defn arranged-index
+  "The index of `view` among `stack`'s arranged subviews, or nil when it is not
+  one. New relative to the glimmer-uikit original, which called
+  stack-index-of! directly and did `(inc i)` on the result — a process abort
+  whenever the sibling was absent."
+  [stack view]
+  (let [i (u/stack-index-of! stack view)]
+    (when-not (or (= i NS-NOT-FOUND) (neg? i)) i)))
+
+(defn forget-view!
+  "Drop every handler/alignment registration held for `view`. New relative to
+  the glimmer-uikit original, whose registries were never cleaned: they grew
+  without bound, and because AppKit reuses freed addresses a newly allocated
+  view could land on a dead view's address and inherit its handler."
+  [view]
+  (swap! actions dissoc view)
+  (swap! changes dissoc view)
+  (swap! alignments dissoc view)
+  nil)
+
 (defn append-child!
   "Add `child` to the end of `parent`. Dispatches on the parent's container kind."
   [parent-tag parent child]
@@ -524,8 +552,36 @@
                   (u/pin-low! child (u/scroll-clip parent)))
     nil))
 
+(defn insert-child-after!
+  "Place `child` immediately after `sibling` within `parent` (nil sibling = first
+  position). Falls back to append when `sibling` is not an arranged subview.
+
+  New relative to the glimmer-uikit original — glimmer's reconciler never needs
+  it; glitter.core's insert-before does.
+
+  ONE code path handles both a fresh insert and a move of an existing child,
+  because -[NSStackView insertArrangedSubview:atIndex:] MOVES a view that is
+  already arranged (measured: [A B C] + insert C@0 -> [C A B], count unchanged).
+  This is where AppKit is genuinely simpler than GTK: glitter.gtk/insert-before
+  must branch on whether the child is already tracked, because
+  gtk_box_insert_child_after asserts its child is UNPARENTED and no-ops with a
+  GTK-CRITICAL otherwise. Do not port that branch here."
+  [parent-tag parent child sibling]
+  (when (= :box (container-kind parent-tag))
+    (if (nil? sibling)
+      (u/stack-insert-arranged! parent child 0)
+      (if-let [i (arranged-index parent sibling)]
+        (u/stack-insert-arranged! parent child (inc i))
+        (u/stack-add-arranged! parent child)))
+    (maybe-align! parent child))
+  nil)
+
 (defn remove-child!
-  "Remove `child` from `parent`."
+  "Remove `child` from `parent`, and drop every registration held for it.
+
+  removeArrangedSubview: alone is not enough: it un-manages the view but leaves
+  it a plain subview (measured — its superview is still non-null afterwards), so
+  removeFromSuperview is also required or the view stays on screen unmanaged."
   [parent-tag parent child]
   (case (container-kind parent-tag)
     :box      (do (u/stack-remove-arranged! parent child)
@@ -533,33 +589,38 @@
     :window   (u/remove-from-superview! child)
     :frame    (u/remove-from-superview! child)
     :scrolled (u/scroll-document! parent ffi/null)
-    nil))
+    nil)
+  (forget-view! child)
+  nil)
 
 (defn replace-child!
-  "Replace `old-child` with `new-child` at the same position in `parent`."
+  "Replace `old-child` with `new-child` at the SAME position in `parent`.
+
+  The glimmer-uikit original did remove + append for every container kind, and
+  addArrangedSubview: always lands at the END of the stack — so replacing any
+  non-final child silently relocated it last. This is the identical defect
+  glitter already fixed on the GTK side (NOTICE Bucket 2, deviation 1). Here the
+  fix is to capture the index BEFORE removing, then insert at it."
   [parent-tag parent old-child new-child]
-  (case (container-kind parent-tag)
-    :box      (do (remove-child! parent-tag parent old-child)
-                  (append-child! parent-tag parent new-child))
-    :window   (do (remove-child! parent-tag parent old-child)
-                  (append-child! parent-tag parent new-child))
-    :frame    (do (remove-child! parent-tag parent old-child)
-                  (append-child! parent-tag parent new-child))
-    :scrolled (do (remove-child! parent-tag parent old-child)
-                  (append-child! parent-tag parent new-child))
-    nil))
+  (if (= :box (container-kind parent-tag))
+    (let [i (arranged-index parent old-child)]
+      (remove-child! parent-tag parent old-child)
+      (if i
+        (do (u/stack-insert-arranged! parent new-child i)
+            (maybe-align! parent new-child))
+        (append-child! parent-tag parent new-child)))
+    (do (remove-child! parent-tag parent old-child)
+        (append-child! parent-tag parent new-child)))
+  nil)
 
 (defn reorder-child!
-  "Move `child` to sit immediately after `sibling` (nil = move to first position)
-  within `parent`. Only NSStackView supports positional reordering; the
-  single-child containers (window/frame/scrolled) no-op."
+  "Move `child` to sit immediately after `sibling` (nil = first position) within
+  `parent`. Identical to insert-child-after! — NSStackView's insert MOVES an
+  already-arranged view, so reordering needs no separate call. Kept as its own
+  name because glitter-uikit.appkit reads better calling it, and because
+  glitter.widget exposes both."
   [parent-tag parent child sibling]
-  (when (= :box (container-kind parent-tag))
-    (u/stack-remove-arranged! parent child)
-    (if (nil? sibling)
-      (u/stack-insert-arranged! parent child 0)
-      (let [i (u/stack-index-of! parent sibling)]
-        (u/stack-insert-arranged! parent child (inc i))))))
+  (insert-child-after! parent-tag parent child sibling))
 
 ;; --- reading the live tree (for tests / smoke examples) ----------------------
 (defn stack-children

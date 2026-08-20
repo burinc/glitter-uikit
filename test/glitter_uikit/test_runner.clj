@@ -34,7 +34,8 @@
 
 (defn -main [& _]
   (let [namespaces '[glitter-uikit.scaffold-test
-                     glitter-uikit.ffi-test]]
+                     glitter-uikit.ffi-test
+                     glitter-uikit.container-test]]
     (doseq [ns namespaces]
       (try (require ns :reload)
            (catch Exception e
