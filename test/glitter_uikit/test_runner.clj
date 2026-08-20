@@ -33,7 +33,8 @@
   (System/exit code))
 
 (defn -main [& _]
-  (let [namespaces '[glitter-uikit.scaffold-test]]
+  (let [namespaces '[glitter-uikit.scaffold-test
+                     glitter-uikit.ffi-test]]
     (doseq [ns namespaces]
       (try (require ns :reload)
            (catch Exception e
