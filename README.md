@@ -77,7 +77,7 @@ with glitter (GTK4) and glitter-uikit (AppKit) both depending on it.
 ## Running
 
 ```sh
-jolt -M:test                        # 19 tests, 72 assertions
+jolt -M:test                        # unit suite (headless; prints its own totals)
 jolt -M:counter                     # interactive counter
 jolt -M:todo                        # interactive task board
 jolt -M:smoke                       # basic smoke test (live AppKit loop)

@@ -103,8 +103,10 @@
                  value-fn (assoc :glitter/value (value-fn sender)))))))
 
 (defn- clear-target-if-unused!
-  "Drop the control's target/action once no action event is registered for it,
-  so a stale selector can't fire on a view glitter no longer routes."
+  "Drop the control's target once no action event is registered for it, so a
+  stale selector can't fire on a view glitter no longer routes. Clears only
+  target, not the action selector itself — harmless, since AppKit has
+  nothing to send the action message to once target is null."
   [view]
   (when (empty? (get @w/actions view))
     (swap! w/actions dissoc view)
