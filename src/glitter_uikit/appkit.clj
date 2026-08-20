@@ -38,6 +38,23 @@
 
 (defn- ptr [el] (:view @el))
 
+;; CORRECTION (P3.T1 review, 2026-08-20): hoisted out of remove-child's letfn so
+;; EVERY subtree-detaching method can call it.
+(defn- forget-subtree!
+  "Drop registry entries for `el` and every descendant.
+
+  glitter.core never calls remove-event-handler for an unmounted node (the DOM
+  lets GC handle it), so without this walk every descendant's entry would leak.
+  Worse than unbounded growth: AppKit reuses freed addresses, so a later view can
+  land on a dead one's address and inherit its handler.
+
+  The widget layer's own remove-child!/replace-child! call forget-view! for
+  exactly ONE pointer — the node handed to them — so every IRender method that
+  detaches a SUBTREE must walk it here first."
+  [el]
+  (w/forget-view! (ptr el))
+  (run! forget-subtree! (:children @el)))
+
 (defonce ^:private memory (atom {}))
 
 ;; --- events ------------------------------------------------------------------
@@ -200,10 +217,7 @@
       ;; (the DOM lets GC handle it), so without this walk every descendant's
       ;; entry would leak — and AppKit reuses freed addresses, so a later view
       ;; could land on a dead one's address and inherit its handler.
-      (letfn [(forget-subtree! [e]
-                (w/forget-view! (ptr e))
-                (run! forget-subtree! (:children @e)))]
-        (forget-subtree! child-node))
+      (forget-subtree! child-node)
       (w/remove-child! (:tag @el) (ptr el) (ptr child-node))
       (swap! el update :children (fn [cs] (into [] (remove #(= % child-node) cs))))
       nil)
@@ -212,12 +226,21 @@
     (on-transition-end [_ _el f] (f) nil)
 
     (replace-child [_ el insert-child replace-child]
+      ;; `replace-child` here is the OLD node being displaced (glitter's arg
+      ;; order), and it may be a whole subtree — glitter.core calls this when an
+      ;; alias's output shape changes between renders (glitter/core.clj:952), so
+      ;; a container full of handler-bearing children can be swapped out wholesale.
+      ;; The widget layer forgets only the top pointer, so walk it here.
+      (forget-subtree! replace-child)
       (w/replace-child! (:tag @el) (ptr el) (ptr replace-child) (ptr insert-child))
       (swap! el update :children
              (fn [cs] (mapv #(if (= % replace-child) insert-child %) cs)))
       nil)
 
     (remove-all-children [_ el]
+      ;; Same subtree-leak hazard as remove-child: each child may itself be a
+      ;; tree, and w/remove-child! forgets only the pointer it is handed.
+      (run! forget-subtree! (:children @el))
       (doseq [c (:children @el)] (w/remove-child! (:tag @el) (ptr el) (ptr c)))
       (swap! el assoc :children [])
       nil)
