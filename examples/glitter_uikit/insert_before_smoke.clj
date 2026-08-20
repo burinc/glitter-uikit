@@ -59,7 +59,9 @@
         ;; just a label a reader then has to go reproduce to diagnose.
         record! (fn [expected actual label]
                   (when (not= expected actual)
-                    (swap! failures conj {:label label :expected expected :actual actual})))]
+                    (swap! failures conj {:label label
+                                          :expected expected
+                                          :actual actual})))]
     (app/run
      (fn [window]
        (appkit/mount! window view state)

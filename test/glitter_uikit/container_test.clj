@@ -125,7 +125,7 @@
   ;; real, so the guard's own comparison is exercised for real.
   (let [w (w/create! :entry {:text "hello"})
         calls (atom 0)]
-    (with-redefs [u/control-string! (fn [c s] (swap! calls inc) nil)]
+    (with-redefs [u/control-string! (fn [_c _s] (swap! calls inc) nil)]
       (w/apply-props! :entry w {:text "hello"})
       (testing "re-applying the same value does not call the setter"
         (is (= 0 @calls)))
