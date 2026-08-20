@@ -31,8 +31,17 @@
   (let [queue   (atom [])
         perform (ffi/foreign-callable
                  (fn [_info]
-                   (let [jobs @queue]
-                     (reset! queue [])
+                   ;; CORRECTION (P3.T2 review, 2026-08-20): capture-and-clear must be
+                   ;; ONE atomic operation. glimmer-uikit's original did
+                   ;; `(let [jobs @queue] (reset! queue []) ...)` — a deref followed
+                   ;; by an unconditional reset. A worker thread's
+                   ;; `(swap! queue conj work)` landing between those two steps is
+                   ;; captured by neither the already-read `jobs` nor the
+                   ;; just-clobbered queue: the thunk is lost permanently, with no
+                   ;; error and no log line. swap-vals! is CAS-based, so a concurrent
+                   ;; post either lands before this swap (and drains now) or after it
+                   ;; (and survives for the next signal).
+                   (let [[jobs _] (swap-vals! queue empty)]
                      (run! (fn [f]
                              (try (f)
                                   (catch :default e
