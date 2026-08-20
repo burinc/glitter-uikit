@@ -22,7 +22,12 @@
  ;; main-opts). Tasks are thin wrappers so you can run `jolt counter`, etc.
  :aliases {:test    {:extra-paths ["test" "examples"]
                      :main-opts ["-m" "glitter-uikit.test-runner"]}
-           :smoke   {:extra-paths ["examples"] :main-opts ["-m" "glitter-uikit.smoke"]}}
+           :smoke   {:extra-paths ["examples"] :main-opts ["-m" "glitter-uikit.smoke"]}
+           :counter {:extra-paths ["examples"] :main-opts ["-m" "glitter-uikit.counter"]}
+           :reactivity-smoke {:extra-paths ["examples"]
+                              :main-opts ["-m" "glitter-uikit.reactivity-smoke"]}}
 
  :tasks {test "jolt -M:test"
-         smoke "jolt -M:smoke"}}
+         smoke "jolt -M:smoke"
+         counter "jolt -M:counter"
+         reactivity-smoke "jolt -M:reactivity-smoke"}}
