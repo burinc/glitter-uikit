@@ -17,7 +17,8 @@
             [glitter-uikit.appkit :as appkit]
             [glitter-uikit.ffi :as u]
             [glitter-uikit.widget :as w]
-            [glitter.core :as core]))
+            [glitter.core :as core]
+            [jolt.ffi :as ffi]))
 
 (defonce state (atom {:order ["a" "b" "c"]}))
 
@@ -46,8 +47,22 @@
     (w/apply-props! :checkbutton cb {:active true})
     (w/apply-props! :checkbutton cb {:active false})
     (w/apply-props! :checkbutton cb {:active true})
-    (w/forget-view! cb)
-    (zero? @hits)))
+    (let [quiet-after-programmatic? (zero? @hits)]
+      ;; CORRECTION (P4.T3 review, 2026-08-20): non-vacuity guard. The zero
+      ;; above is only meaningful if this control's fire path is actually ALIVE.
+      ;; A broken invoker/fire: registration — class-add-method silently
+      ;; failing, a future refactor of GlitterTarget — would ALSO leave hits at
+      ;; 0, and this fn would report "no suppression needed" for entirely the
+      ;; wrong reason, falsely closing the one question it exists to answer.
+      ;; reactivity_smoke.clj proves the same action path via a :button, but a
+      ;; cross-FILE dependency can be silently broken while both smokes stay
+      ;; green. So prove it HERE: a real click must fire the very handler the
+      ;; programmatic writes did not. This mirrors handler_cleanup_smoke.clj's
+      ;; own `nested-button-registered-a-handler` guard.
+      (u/objc-msg-send-1pvoid cb (u/sel "performClick:") ffi/null)
+      (let [fire-path-alive? (pos? @hits)]
+        (w/forget-view! cb)
+        (and quiet-after-programmatic? fire-path-alive?)))))
 
 (defn -main [& _]
   (let [failures (atom [])
@@ -75,7 +90,11 @@
          ;; quit is SCHEDULED, not called inline: on-activate runs before
          ;; [NSApp run] has started, and -[NSApplication stop:] only takes
          ;; effect on a loop that is already running. :auto-quit-ms stays as a
-         ;; backstop in case an assertion above throws before we get here.
+         ;; backstop for the quit being posted but never running. NOTE it does
+         ;; NOT rescue an assertion above throwing: run* calls on-activate
+         ;; BEFORE it arms auto-quit! and before [NSApp run], so an exception
+         ;; here propagates out of run* with the timer never armed — the
+         ;; process crashes rather than hangs.
          (app/schedule! app/quit!)))
      :title "keyed smoke" :width 260 :height 200 :auto-quit-ms 900)
     (println :failures @failures)
