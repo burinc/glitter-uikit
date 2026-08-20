@@ -14,10 +14,21 @@ not a claimed permission. The same author licenses the sibling
 appears to be an upstream oversight rather than a deliberate reservation; that
 is an observation, not a substitute for a license.
 
-Authorship verified from git history on `upstream/main`: glimmer-uikit 1 commit,
-glimmer 24 (22 `Yogthos` + 2 `Dmitri Sotnikov`, the same person under two git
-identities), glimmer-gl 19 — zero commits by any other author in any of the
-three.
+Authorship verified from the git history available in local checkouts, naming
+the ref checked per repo — `glimmer-uikit` at `upstream/main`, which is tag
+`v0.1.0` (commit `8f1c6a4`); `glimmer` at its local `main`, and `glimmer-gl` at
+`main` = `origin/main`. Neither of the latter two carries an `upstream` remote
+in this checkout, so both may lag the jolt-lang originals and their counts are
+stated as local observations, not as upstream totals.
+
+| repo | ref checked | commits | authors |
+|---|---|---|---|
+| `glimmer-uikit` | `upstream/main` (tag `v0.1.0`) | 1 | `Yogthos` 1 |
+| `glimmer` | local `main` | 24 | `Yogthos` 22, `Dmitri Sotnikov` 2 |
+| `glimmer-gl` | local `main` | 19 | `Yogthos` 18, `Dmitri Sotnikov` 1 |
+
+The load-bearing claim holds on every ref checked: a single author under two git
+identities, and zero commits by any other author in any of the three.
 
 - `src/glitter_uikit/ffi.clj` — `src/glimmer_uikit/ffi.clj`. Near-verbatim:
   namespace substitution only (4 lines), plus one added binding, `control-state`
