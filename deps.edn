@@ -29,11 +29,17 @@
            :replace-child-smoke {:extra-paths ["examples"]
                                  :main-opts ["-m" "glitter-uikit.replace-child-smoke"]}
            :insert-before-smoke {:extra-paths ["examples"]
-                                 :main-opts ["-m" "glitter-uikit.insert-before-smoke"]}}
+                                 :main-opts ["-m" "glitter-uikit.insert-before-smoke"]}
+           :keyed-smoke {:extra-paths ["examples"]
+                         :main-opts ["-m" "glitter-uikit.keyed-smoke"]}
+           :handler-cleanup-smoke {:extra-paths ["examples"]
+                                   :main-opts ["-m" "glitter-uikit.handler-cleanup-smoke"]}}
 
  :tasks {test "jolt -M:test"
          smoke "jolt -M:smoke"
          counter "jolt -M:counter"
          reactivity-smoke "jolt -M:reactivity-smoke"
          replace-child-smoke "jolt -M:replace-child-smoke"
-         insert-before-smoke "jolt -M:insert-before-smoke"}}
+         insert-before-smoke "jolt -M:insert-before-smoke"
+         keyed-smoke "jolt -M:keyed-smoke"
+         handler-cleanup-smoke "jolt -M:handler-cleanup-smoke"}}
