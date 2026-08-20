@@ -10,8 +10,14 @@
      has DOM-like auto-move semantics, which is why this renderer needs no
      equivalent of glitter.gtk's two-branch insert-before.
 
-  A count assertion guards case 2: a duplicate would still satisfy an
-  order check that only looks at the first N entries.
+  A count assertion accompanies case 2. Note precisely what it does and does
+  not add: `reorder-order` compares with full Clojure vector `=`, which is
+  count-sensitive, so a duplicated subview (4 entries where 3 are expected)
+  already fails THAT assertion on length alone. The count check is not
+  catching a case the order check would miss — it exists to give a specific,
+  unambiguous failure label ("reorder-no-duplicates") when the failure IS a
+  duplication, instead of a generic order mismatch that a reader then has to
+  diagnose.
 
   Run via `jolt insert-before-smoke`. Needs a GUI session."
   (:require [glitter-uikit.app :as app]
