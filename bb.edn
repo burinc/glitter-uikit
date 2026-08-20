@@ -12,7 +12,7 @@
 ;;   bb handler-cleanup-smoke   live smoke: handler registry cleanup on unmount
 ;;   bb main-thread-smoke       live smoke: on-gui's 3-way thread branch
 ;;   bb repl-live-smoke         live smoke: nREPL-driven live mount/update
-;;   bb smokes                  run all 8 non-interactive live smokes in sequence (dev convenience; not CI — needs a GUI session)
+;;   bb smokes                  run every non-interactive live smoke in sequence (dev convenience; not CI — needs a GUI session)
 ;;   bb lint | lint:strict      clj-kondo over glitter-uikit-authored code; :strict propagates findings
 ;;   bb lsp:format | lsp:format-check       clojure-lsp format (mutate | dry-run)
 ;;   bb lsp:clean-ns | lsp:clean-ns-check   clojure-lsp clean-ns (mutate | dry-run)
@@ -55,7 +55,7 @@
           (row "handler-cleanup-smoke" "handler registry cleanup on unmount")
           (row "main-thread-smoke" "on-gui's 3-way thread branch")
           (row "repl-live-smoke" "nREPL-driven live mount/update")
-          (row "smokes" "run all 8 non-interactive live smokes in sequence; stops at first failure")
+          (row "smokes" "run every non-interactive live smoke in sequence; stops at first failure")
           (hdr "Quality — lint/format/checks")
           (row "lint" "clj-kondo over glitter-uikit-authored code (report only)")
           (row "lint:strict" "bb lint, but exit non-zero if any findings")
@@ -109,7 +109,7 @@
   repl-live-smoke {:doc "Live-AppKit smoke: nREPL-driven live mount/update"
                    :task (shell "jolt" "-M:repl-live-smoke")}
 
-  smokes {:doc "Run all 8 non-interactive live smokes in sequence; stops at the first failure. Dev convenience only — needs a GUI session, not part of CI."
+  smokes {:doc "Run every non-interactive live smoke in sequence; stops at the first failure. Dev convenience only — needs a GUI session, not part of CI."
           :task (do (shell "jolt" "-M:smoke")
                     (shell "jolt" "-M:reactivity-smoke")
                     (shell "jolt" "-M:replace-child-smoke")

@@ -49,13 +49,14 @@ Run `bb info` for the full grouped task list.
 `bb lsp:clean-ns`/`clean-ns-check`, `bb lsp:diagnostics`/`check`/`fix`, `bb
 verify`, `bb hooks:install`/`:install:full`/`:uninstall`, `bb nrepl`): needs
 `clj-kondo` and `clojure-lsp` on `PATH`. `.clj-kondo/hooks/jolt_ffi.clj`
-(adapted from glitter's own) rewrites `jolt.ffi/defcfn` so clj-kondo/
-clojure-lsp can see through the FFI macro. `bb verify` is a manual pre-commit
-gate: lint (report only) + `jolt -M:test` (must pass) — it does NOT check
-formatting. The installed git hook (`bb hooks:install`) is a separate,
-automatic gate that runs on every `git commit`: lint errors-only + `clojure-lsp
-format --dry` + `clojure-lsp clean-ns --dry` (FAST), or the same plus
-`jolt -M:test` (`hooks:install:full`). Running `bb verify` clean does not
+(adapted from glitter-gl's own, which in turn credits glitter and b12n-rljlt —
+see `docs/guide/porting-and-attribution.md`) rewrites `jolt.ffi/defcfn` so
+clj-kondo/clojure-lsp can see through the FFI macro. `bb verify` is a manual
+pre-commit gate: lint (report only) + `jolt -M:test` (must pass) — it does NOT
+check formatting. The installed git hook (`bb hooks:install`) is a separate,
+automatic gate that runs on every `git commit`: lint errors-only +
+`clojure-lsp format --dry` + `clojure-lsp clean-ns --dry` (FAST), or the same
+plus `jolt -M:test` (`hooks:install:full`). Running `bb verify` clean does not
 guarantee the git hook will also pass — format drift is only caught by the
 hook, not by `verify`.
 
