@@ -396,7 +396,16 @@
 (defn- entry-spec []
   {:ctor  (fn [_] (u/entry-new))
    :apply (fn [w p]
-            (when (contains? p :text)        (u/control-string! w (:text p)))
+            ;; only-when-different: NOT for loop suppression (AppKit doesn't
+            ;; fire delegate callbacks for programmatic setStringValue:, so
+            ;; there's no re-render loop to break) but because unconditionally
+            ;; re-setting stringValue on every re-render resets the insertion
+            ;; point mid-typing. The AppKit port needed this restored — it
+            ;; exists in glimmer-gtk and glitter, but the glimmer-uikit
+            ;; original this file was ported from lacks it, and a verbatim
+            ;; port silently lost the guard along with it.
+            (when (and (contains? p :text) (not= (:text p) (u/control-string w)))
+              (u/control-string! w (:text p)))
             (when (contains? p :placeholder) (u/control-placeholder! w (:placeholder p)))
             (when (contains? p :sensitive)   (u/control-enabled! w (:sensitive p)))
             (when (:tooltip p)               (u/set-tooltip! w (:tooltip p))))

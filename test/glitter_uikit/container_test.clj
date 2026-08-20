@@ -112,3 +112,23 @@
     (w/remove-child! :box stack btn)
     (testing "removing a child drops its registry entries"
       (is (not (contains? @w/actions btn))))))
+
+(deftest entry-text-setter-skipped-when-unchanged
+  ;; I1 — the spec promises set-entry-text! keeps an only-when-different
+  ;; check (not for loop suppression — AppKit fires no delegate callback for
+  ;; a programmatic setStringValue: — but because unconditionally re-setting
+  ;; stringValue on every re-render resets the insertion point mid-typing).
+  ;; The verbatim port from glimmer-uikit lost this guard silently; it is on
+  ;; the shipped todo.clj demo's hot path (every keystroke re-renders the
+  ;; controlled draft field). Proven by counting real setStringValue: calls
+  ;; via a redef of the FFI setter — u/control-string (the getter) is left
+  ;; real, so the guard's own comparison is exercised for real.
+  (let [w (w/create! :entry {:text "hello"})
+        calls (atom 0)]
+    (with-redefs [u/control-string! (fn [c s] (swap! calls inc) nil)]
+      (w/apply-props! :entry w {:text "hello"})
+      (testing "re-applying the same value does not call the setter"
+        (is (= 0 @calls)))
+      (w/apply-props! :entry w {:text "world"})
+      (testing "applying a different value does call the setter"
+        (is (= 1 @calls))))))
