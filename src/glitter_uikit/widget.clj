@@ -68,7 +68,15 @@
            :show :line_height :allow_breaks :insert_hyphens :text_transform
            :gravity :gravity_hint :overline :overline_color}
    :a    #{:href}
-   :b nil :big nil :i nil :mark nil :s nil :small nil :sub nil :sup nil :tt nil
+   :b nil
+   :big nil
+   :i nil
+   :mark nil
+   :s nil
+   :small nil
+   :sub nil
+   :sup nil
+   :tt nil
    :u nil})
 
 (defn- markup-element? [form] (and (vector? form) (keyword? (first form))))
@@ -88,12 +96,14 @@
       (when (and attrs (seq attrs))
         (if (nil? allowed)
           (throw (ex-info (str "glitter-uikit/markup: :" (name tag) " takes no attributes")
-                          {:tag tag :attrs (keys attrs)}))
+                          {:tag tag
+                           :attrs (keys attrs)}))
           (doseq [k (keys attrs)]
             (when-not (contains? allowed k)
               (throw (ex-info (str "glitter-uikit/markup: :" (name k)
                                    " is not a :" (name tag) " attribute")
-                              {:tag tag :attr k}))))))
+                              {:tag tag
+                               :attr k}))))))
       (run! markup-validate! children))))
 
 (defn- markup-validate! [form]
@@ -132,8 +142,13 @@
 ;; against the full Pango vocabulary) are parsed and dropped — their text
 ;; survives, which keeps a Pango fragment from silently vanishing.
 (def ^:private named-sizes
-  {"xx-small" 9 "x-small" 11 "small" 12 "medium" 13
-   "large" 15 "x-large" 17 "xx-large" 22})
+  {"xx-small" 9
+   "x-small" 11
+   "small" 12
+   "medium" 13
+   "large" 15
+   "x-large" 17
+   "xx-large" 22})
 
 (defn- parse-attrs
   "Extract k='v' pairs from a tag string."
@@ -226,8 +241,10 @@
 ;; :hbox / :vbox are both NSStackView; the difference is orientation.
 ;; normalize-tag maps them to the :box spec, and with-orientation injects the
 ;; matching :orientation so a bare [:hbox ...] lays out horizontally.
-(def ^:private aliases {:hbox :box :vbox :box})
-(def ^:private tag-orientation {:hbox :horizontal :vbox :vertical})
+(def ^:private aliases {:hbox :box
+                        :vbox :box})
+(def ^:private tag-orientation {:hbox :horizontal
+                                :vbox :vertical})
 
 (defn- normalize-tag [tag] (get aliases tag tag))
 

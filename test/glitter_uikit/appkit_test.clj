@@ -16,7 +16,8 @@
       (is (= "typed" (f entry)))))
   (testing "a checkbutton's :toggled carries a real boolean, not an NSInteger"
     (let [f (@appkit/signal-value [:checkbutton :toggled])
-          cb (w/create! :checkbutton {:label "x" :active true})]
+          cb (w/create! :checkbutton {:label "x"
+                                      :active true})]
       (is (some? f))
       (is (true? (f cb)))
       (w/apply-props! :checkbutton cb {:active false})

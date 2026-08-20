@@ -1,0 +1,23 @@
+;; clj-kondo configuration for glitter-uikit.
+;;
+;; jolt.ffi/defcfn defines a var per bound C symbol. clj-kondo cannot see
+;; through the macro, so hooks/jolt_ffi.clj rewrites each call into an
+;; equivalent `defn` — see that file for why. Without it every
+;; objc-msg-send-*/objc-*/cf-* binding in glitter-uikit.ffi, and every call
+;; site through the `u` alias in glitter-uikit.appkit / glitter-uikit.widget,
+;; is a false "Unresolved symbol"/"Unresolved var".
+;;
+;; Unlike glitter-gl (whose config.edn excludes an entire verbatim-ported
+;; geometry/matrix/shader layer), glitter-uikit has no byte-for-byte-verbatim
+;; port needing a blanket exclusion: ffi.clj and widget.clj are ported from
+;; glimmer-uikit with documented deviations (see NOTICE.md), not held
+;; byte-identical to upstream, so there is no "don't fix, it'd deviate from
+;; upstream" case to make here.
+;;
+;; `:missing-else-branch` is off project-wide: glitter-uikit.widget's
+;; markup-validate-element! (and the same guard-clause idiom elsewhere) uses
+;; a deliberately else-less `(if-not cond (throw ...))` as an assert, not a
+;; two-way branch — the "missing" branch is "fall through to the next form",
+;; which is the intended control flow, not an omission.
+{:hooks {:analyze-call {jolt.ffi/defcfn hooks.jolt-ffi/defcfn}}
+ :linters {:missing-else-branch {:level :off}}}

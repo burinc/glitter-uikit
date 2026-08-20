@@ -215,8 +215,8 @@
 (defn post-event-at-start! [app e] (objc-msg-send-1pcharvoid app (sel "postEvent:atStart:") e 1))
 (defn application-defined-event []
   (objc-msg-send-other-event
-    (cls "NSEvent") (sel "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:")
-    EVENT-APPLICATION-DEFINED 0.0 0.0 0 0.0 0 ffi/null 0 0 0))
+   (cls "NSEvent") (sel "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:")
+   EVENT-APPLICATION-DEFINED 0.0 0.0 0 0.0 0 ffi/null 0 0 0))
 
 ;; --- NSWindow ---------------------------------------------------------------
 (defn window-title! [w t] (objc-msg-send-1pvoid w (sel "setTitle:") (nsstring t)))
@@ -224,9 +224,9 @@
   "Create an NSWindow with the given content size and title."
   [title width height]
   (let [w (objc-msg-send-4d3
-            (objc-msg-send-0 (cls "NSWindow") (sel "alloc"))
-            (sel "initWithContentRect:styleMask:backing:defer:")
-            0.0 0.0 (double width) (double height) WINDOW-STYLE NS-BACKING-BUFFERED 0)]
+           (objc-msg-send-0 (cls "NSWindow") (sel "alloc"))
+           (sel "initWithContentRect:styleMask:backing:defer:")
+           0.0 0.0 (double width) (double height) WINDOW-STYLE NS-BACKING-BUFFERED 0)]
     (objc-msg-send-1intvoid w (sel "setReleasedWhenClosed:") 0)
     (when title (window-title! w title))
     w))
@@ -248,9 +248,9 @@
   (objc-msg-send-1f1i64void v (sel "setContentHuggingPriority:forOrientation:") (float priority) orientation))
 (defn constraint [view1 attr1 view2 attr2 multiplier constant]
   (objc-msg-send-constraint
-    (cls "NSLayoutConstraint")
-    (sel "constraintWithItem:attribute:relatedBy:toItem:attribute:multiplier:constant:")
-    view1 attr1 RELATION-EQUAL view2 attr2 (double multiplier) (double constant)))
+   (cls "NSLayoutConstraint")
+   (sel "constraintWithItem:attribute:relatedBy:toItem:attribute:multiplier:constant:")
+   view1 attr1 RELATION-EQUAL view2 attr2 (double multiplier) (double constant)))
 (defn- pin-constraints! [child parent priority]
   (doseq [[a1 a2] [[ATTR-LEADING ATTR-LEADING] [ATTR-TRAILING ATTR-TRAILING]
                    [ATTR-TOP ATTR-TOP] [ATTR-BOTTOM ATTR-BOTTOM]]]
@@ -350,8 +350,8 @@
   "A titled NSBox — the AppKit analogue of GTK's frame."
   []
   (let [b (objc-msg-send-4d
-            (objc-msg-send-0 (cls "NSBox") (sel "alloc"))
-            (sel "initWithFrame:") 0.0 0.0 0.0 0.0)]
+           (objc-msg-send-0 (cls "NSBox") (sel "alloc"))
+           (sel "initWithFrame:") 0.0 0.0 0.0 0.0)]
     (objc-msg-send-1i64void b (sel "setTitlePosition:") TITLE-POSITION-AT-TOP)
     (objc-msg-send-2dvoid b (sel "setContentViewMargins:") 0.0 0.0)
     b))
@@ -362,8 +362,8 @@
   primitive; a :vertical :separator renders as nothing in v1.)"
   []
   (let [b (objc-msg-send-4d
-            (objc-msg-send-0 (cls "NSBox") (sel "alloc"))
-            (sel "initWithFrame:") 0.0 0.0 0.0 0.0)]
+           (objc-msg-send-0 (cls "NSBox") (sel "alloc"))
+           (sel "initWithFrame:") 0.0 0.0 0.0 0.0)]
     (objc-msg-send-1i64void b (sel "setBoxType:") BOX-SEPARATOR)
     b))
 (defn scroll-new []
@@ -418,9 +418,9 @@
   fire on the main loop while NSApplication runs."
   [ms target selector]
   (objc-msg-send-1d3pchar
-    (cls "NSTimer")
-    (sel "scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:")
-    (/ (double ms) 1000.0) target selector ffi/null 0))
+   (cls "NSTimer")
+   (sel "scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:")
+   (/ (double ms) 1000.0) target selector ffi/null 0))
 (defn current-run-loop [] (objc-msg-send-0 (cls "NSRunLoop") (sel "currentRunLoop")))
 (defn run-loop-until! [rl date] (objc-msg-send-1p rl (sel "runUntilDate:") date))
 (defn date-in [secs] (objc-msg-send-1d (cls "NSDate") (sel "dateWithTimeIntervalSinceNow:") (double secs)))

@@ -57,7 +57,9 @@
     (let [src (u/cf-run-loop-source-create ffi/null 0 ctx)
           rl  (u/cf-run-loop-get-main)]
       (u/cf-run-loop-add-source rl src (u/default-mode))
-      {:queue queue :source src :run-loop rl})))
+      {:queue queue
+       :source src
+       :run-loop rl})))
 
 (defn- post-to-gui
   "Schedule zero-arg `work` on the AppKit main loop."
@@ -107,7 +109,9 @@
 (defn- run*
   [on-activate opts]
   (let [{:keys [title width height auto-quit-ms]
-         :or {title "glitter" width 400 height 300}} opts
+         :or {title "glitter"
+              width 400
+              height 300}} opts
         _   (u/objc-autorelease-pool-push)
         app (u/shared-application)]
     (u/set-activation-policy! app u/ACTIVATION-REGULAR)

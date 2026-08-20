@@ -1,0 +1,41 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Checked out to a NAMED, workspace-relative path (not the default
+      # $GITHUB_WORKSPACE root) so the sibling glitter checkout below can
+      # land at another workspace-relative path and the two form the exact
+      # "sibling directories" shape deps.edn's :local/root "../glitter"
+      # expects. actions/checkout resolves `path` relative to
+      # $GITHUB_WORKSPACE and REJECTS anything that resolves outside it
+      # (verified against actions/checkout's own input-helper.ts: it
+      # throws "Repository path '<path>' is not under '<workspace>'") — so
+      # `path: ../glitter` for the second checkout, sibling to a root
+      # checkout of this repo, is not an option here.
+      - uses: actions/checkout@v4
+        with:
+          path: glitter-uikit
+      - name: Check out glitter (this repo depends on it via :local/root)
+        uses: actions/checkout@v4
+        with:
+          repository: burinc/glitter
+          path: glitter
+      - name: Install jolt
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y liblz4-1 zlib1g libtinfo6
+          curl -fsSL https://raw.githubusercontent.com/jolt-lang/jolt/main/install \
+            | bash -s -- --dir "$HOME/.jolt"
+          echo "$HOME/.jolt" >> "$GITHUB_PATH"
+      - name: Install GTK4
+        # Not because anything here calls GTK — this renderer is AppKit only.
+        # glitter declares GTK4 under :jolt/native and jolt inherits a
+        # dependency's natives transitively, hard-failing in load-natives!
+        # before any namespace loads. See README's Status section.
+        run: sudo apt-get install -y libgtk-4-1
+      - name: Test
+        working-directory: glitter-uikit
+        run: JOLT_PWD="$PWD" jolt -M:test

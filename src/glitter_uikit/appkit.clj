@@ -114,14 +114,21 @@
     (create-element [_ tag-name options]
       (let [tag (keyword tag-name)
             view (w/create! tag (or options {}))]
-        (atom {:tag tag :view view :children [] :handlers {}})))
+        (atom {:tag tag
+               :view view
+               :children []
+               :handlers {}})))
 
     (create-text-node [_ text]
       ;; AppKit has no text-node primitive; a bare string/number hiccup child
       ;; becomes its own :label view (mirrors glitter.gtk and glimmer's leaf
       ;; convention).
       (let [view (w/create! :label {:label text})]
-        (atom {:tag :label :view view :children [] :handlers {} :text text})))
+        (atom {:tag :label
+               :view view
+               :children []
+               :handlers {}
+               :text text})))
 
     (attached? [_ _el] true)
 
@@ -265,7 +272,10 @@
   into every reconcile call automatically."
   [window view state-atom]
   (let [r (renderer)
-        root-el (atom {:tag :window :view window :children [] :handlers {}})
+        root-el (atom {:tag :window
+                       :view window
+                       :children []
+                       :handlers {}})
         vdom (atom nil)
         render! (fn [state]
                   (reset! vdom (:vdom (core/reconcile r root-el (view state) @vdom

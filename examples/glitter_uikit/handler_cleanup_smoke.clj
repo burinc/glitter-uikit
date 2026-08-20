@@ -23,7 +23,8 @@
    [:label {:label "anchor"}]
    (when show?
      [:hbox {:spacing 4}
-      [:button {:label "nested" :on {:click [[:action/noop]]}}]])])
+      [:button {:label "nested"
+                :on {:click [[:action/noop]]}}]])])
 
 (core/set-dispatch! (fn [_ _] nil))
 

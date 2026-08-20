@@ -1,0 +1,208 @@
+;; Babashka runner for glitter-uikit — the AppKit (native macOS) renderer for
+;; glitter, ported from glimmer-uikit.
+;;   bb info               grouped task cheat-sheet (start here)
+;;   bb test                run the unit suite (jolt -M:test)
+;;   bb smoke                 end-to-end seam proof: mount, reconcile, quit
+;;   bb counter                interactive demo: a counter window
+;;   bb todo                    interactive demo: a todo list (glitter.nexus)
+;;   bb reactivity-smoke        live smoke: state-atom watch triggers reconcile
+;;   bb replace-child-smoke     live smoke: :replace-child! child swap
+;;   bb insert-before-smoke     live smoke: insert-before ordering
+;;   bb keyed-smoke             live smoke: keyed reorder + no spurious dispatch
+;;   bb handler-cleanup-smoke   live smoke: handler registry cleanup on unmount
+;;   bb main-thread-smoke       live smoke: on-gui's 3-way thread branch
+;;   bb repl-live-smoke         live smoke: nREPL-driven live mount/update
+;;   bb smokes                  run all 8 non-interactive live smokes in sequence (dev convenience; not CI — needs a GUI session)
+;;   bb lint | lint:strict      clj-kondo over glitter-uikit-authored code; :strict propagates findings
+;;   bb lsp:format | lsp:format-check       clojure-lsp format (mutate | dry-run)
+;;   bb lsp:clean-ns | lsp:clean-ns-check   clojure-lsp clean-ns (mutate | dry-run)
+;;   bb lsp:diagnostics | lsp:check | lsp:fix   diagnostics | all dry-run checks | auto-fix
+;;   bb verify                pre-commit gate: lint (report) + test (must pass)
+;;   bb check:positional-args | :strict   find fns with 3+ positional args (report | strict)
+;;   bb hooks:install | hooks:install:full | hooks:uninstall   git pre-commit hook
+;;   bb nrepl [port]           start a jolt nREPL server (default 7888)
+;; NOTE: task bodies are EDN-parsed — no #"regex", @deref, or #(...) reader macros.
+;; NOTE: every jolt task below shells out to `jolt -M:<alias>`, never the deps.edn
+;; `jolt <task>` shorthand — the task form does not propagate its child process's
+;; exit status (verified in glitter against jolt v0.6.3); `-M:<alias>` exits correctly.
+;; NOTE: the live smoke tasks (everything but `test`) open a real AppKit
+;; window and need a GUI session — they do not run on a headless CI runner.
+;; CI's own gate is `jolt -M:test` only; see .github/workflows/tests.yml.
+{:min-bb-version "1.3.0"
+ :tasks
+ {:requires ([babashka.fs :as fs]
+             [clojure.string :as str])
+
+  info {:doc "Grouped task cheat-sheet (start here; easier to scan than `bb tasks`)"
+        :task
+        (let [esc (str (char 27) "[")
+              col (fn [c s] (str esc c "m" s esc "0m"))
+              hdr (fn [s] (println (str "\n" (col "35" (str "── " s " ──")))))
+              row (fn [t d] (println (str "  " (col "36" (format "%-33s" (str "bb " t))) d)))]
+          (println (col "1;35" "\nglitter-uikit — AppKit (native macOS) renderer for glitter"))
+          (hdr "Verify")
+          (row "test" "run the unit suite (jolt -M:test)")
+          (row "verify" "lint (report) + test (must pass) — pre-commit gate")
+          (hdr "Run (interactive; opens a real window)")
+          (row "counter" "interactive demo: a counter window")
+          (row "todo" "interactive demo: a todo list (glitter.nexus)")
+          (hdr "Smoke (live AppKit, exits non-zero on failure)")
+          (row "smoke" "end-to-end seam proof: mount, reconcile, quit")
+          (row "reactivity-smoke" "state-atom watch triggers reconcile")
+          (row "replace-child-smoke" ":replace-child! child swap")
+          (row "insert-before-smoke" "insert-before ordering")
+          (row "keyed-smoke" "keyed reorder + no spurious dispatch")
+          (row "handler-cleanup-smoke" "handler registry cleanup on unmount")
+          (row "main-thread-smoke" "on-gui's 3-way thread branch")
+          (row "repl-live-smoke" "nREPL-driven live mount/update")
+          (row "smokes" "run all 8 non-interactive live smokes in sequence; stops at first failure")
+          (hdr "Quality — lint/format/checks")
+          (row "lint" "clj-kondo over glitter-uikit-authored code (report only)")
+          (row "lint:strict" "bb lint, but exit non-zero if any findings")
+          (row "lsp:format" "reformat all Clojure files (clojure-lsp)")
+          (row "lsp:format-check" "check formatting — dry run")
+          (row "lsp:clean-ns" "clean + organize ns forms (clojure-lsp)")
+          (row "lsp:clean-ns-check" "check ns forms — dry run")
+          (row "lsp:diagnostics" "clojure-lsp diagnostics")
+          (row "lsp:check" "all LSP checks (format + clean-ns + diagnostics) — dry run")
+          (row "lsp:fix" "auto-fix: format + clean-ns (mutating)")
+          (row "check:positional-args" "find fns with 3+ positional args (report only)")
+          (row "check:positional-args:strict" "bb check:positional-args, but exit non-zero if any found")
+          (hdr "Git hooks")
+          (row "hooks:install" "install FAST pre-commit hook (lint errors + format + clean-ns, ~2s)")
+          (row "hooks:install:full" "install FULL pre-commit hook (+ unit tests, slower)")
+          (row "hooks:uninstall" "remove the git pre-commit hook")
+          (hdr "Dev")
+          (row "nrepl [port]" "start a jolt nREPL server (default 7888)")
+          (println (str "\n" (col "2" "first run: bb test, then bb counter  ·  CI gate: bb test"))))}
+
+  test {:doc "Run the unit suite"
+        :task (shell "jolt" "-M:test")}
+
+  smoke {:doc "Live-AppKit smoke: end-to-end seam proof (mount, reconcile, quit)"
+         :task (shell "jolt" "-M:smoke")}
+
+  counter {:doc "Interactive demo: a counter window"
+           :task (shell "jolt" "-M:counter")}
+
+  todo {:doc "Interactive demo: a todo list (glitter.nexus)"
+        :task (shell "jolt" "-M:todo")}
+
+  reactivity-smoke {:doc "Live-AppKit smoke: state-atom watch triggers reconcile"
+                    :task (shell "jolt" "-M:reactivity-smoke")}
+
+  replace-child-smoke {:doc "Live-AppKit smoke: :replace-child! child swap"
+                       :task (shell "jolt" "-M:replace-child-smoke")}
+
+  insert-before-smoke {:doc "Live-AppKit smoke: insert-before ordering"
+                       :task (shell "jolt" "-M:insert-before-smoke")}
+
+  keyed-smoke {:doc "Live-AppKit smoke: keyed reorder + no spurious dispatch"
+               :task (shell "jolt" "-M:keyed-smoke")}
+
+  handler-cleanup-smoke {:doc "Live-AppKit smoke: handler registry cleanup on unmount"
+                         :task (shell "jolt" "-M:handler-cleanup-smoke")}
+
+  main-thread-smoke {:doc "Live-AppKit smoke: on-gui's 3-way thread branch"
+                     :task (shell "jolt" "-M:main-thread-smoke")}
+
+  repl-live-smoke {:doc "Live-AppKit smoke: nREPL-driven live mount/update"
+                   :task (shell "jolt" "-M:repl-live-smoke")}
+
+  smokes {:doc "Run all 8 non-interactive live smokes in sequence; stops at the first failure. Dev convenience only — needs a GUI session, not part of CI."
+          :task (do (shell "jolt" "-M:smoke")
+                    (shell "jolt" "-M:reactivity-smoke")
+                    (shell "jolt" "-M:replace-child-smoke")
+                    (shell "jolt" "-M:insert-before-smoke")
+                    (shell "jolt" "-M:keyed-smoke")
+                    (shell "jolt" "-M:handler-cleanup-smoke")
+                    (shell "jolt" "-M:main-thread-smoke")
+                    (shell "jolt" "-M:repl-live-smoke"))}
+
+  lint {:doc "clj-kondo over glitter-uikit-authored code (report only)"
+        :task (shell {:continue true} "clj-kondo" "--lint" "src" "test" "examples")}
+
+  lint:strict {:doc "bb lint, but exit non-zero if any findings"
+               :task (shell "clj-kondo" "--lint" "src" "test" "examples")}
+
+  lsp:format {:doc "Reformat all Clojure files (clojure-lsp)"
+              :task (shell "clojure-lsp" "format")}
+
+  lsp:format-check {:doc "Check formatting — dry run"
+                    :task (shell "clojure-lsp" "format" "--dry")}
+
+  lsp:clean-ns {:doc "Clean + organize ns forms (clojure-lsp)"
+                :task (shell "clojure-lsp" "clean-ns")}
+
+  lsp:clean-ns-check {:doc "Check ns forms — dry run"
+                      :task (shell "clojure-lsp" "clean-ns" "--dry")}
+
+  lsp:diagnostics {:doc "clojure-lsp diagnostics"
+                   :task (shell "clojure-lsp" "diagnostics")}
+
+  lsp:check {:doc "All LSP checks (format + clean-ns + diagnostics) — dry run"
+             :task (do (shell "clojure-lsp" "format" "--dry")
+                       (shell "clojure-lsp" "clean-ns" "--dry")
+                       (shell "clojure-lsp" "diagnostics"))}
+
+  lsp:fix {:doc "Auto-fix: format + clean-ns (mutating)"
+           :task (do (shell "clojure-lsp" "format")
+                     (shell "clojure-lsp" "clean-ns"))}
+
+  verify {:doc "Pre-commit gate: lint (report) + test (must pass)"
+          :task (do (shell {:continue true} "clj-kondo" "--lint" "src" "test" "examples")
+                    (shell "jolt" "-M:test"))}
+
+  check:positional-args {:doc "Find fns with 3+ positional args (prefer a kwargs map)"
+                         :task (let [{:keys [exit]} (shell {:continue true} "bb" "scripts/check_positional_args.clj")]
+                                 (System/exit exit))}
+
+  check:positional-args:strict {:doc "check:positional-args, but fail (exit 1) if any found"
+                                :task (let [{:keys [exit]} (shell {:continue true} "bb" "scripts/check_positional_args.clj" "--strict")]
+                                        (System/exit exit))}
+
+  hooks:install {:doc "Install FAST git pre-commit hook (lint errors + format + clean-ns, ~2s)"
+                 :task (let [hook (str/trim (:out (shell {:out :string} "git" "rev-parse" "--git-path" "hooks/pre-commit")))]
+                         (spit hook (str "#!/bin/bash\n"
+                                         "# glitter-uikit pre-commit (FAST — lint errors-only + format + clean-ns dry-run).\n"
+                                         "# Full (+ test suite): bb hooks:install:full\n"
+                                         "echo 'pre-commit 1/3: clj-kondo (errors only; known warnings accepted)'\n"
+                                         "clj-kondo --lint src test examples\n"
+                                         "LINT_EXIT=$?\n"
+                                         "if [ \"$LINT_EXIT\" = \"3\" ]; then echo 'pre-commit: lint errors found'; exit 1; fi\n"
+                                         "echo 'pre-commit 2/3: clojure-lsp format --dry'\n"
+                                         "clojure-lsp format --dry || { echo 'run bb lsp:format'; exit 1; }\n"
+                                         "echo 'pre-commit 3/3: clojure-lsp clean-ns --dry'\n"
+                                         "clojure-lsp clean-ns --dry || { echo 'run bb lsp:clean-ns'; exit 1; }\n"
+                                         "exit 0\n"))
+                         (shell "chmod" "+x" hook)
+                         (println "OK fast pre-commit hook installed")
+                         (println ">> skip once with: git commit --no-verify"))}
+
+  hooks:install:full {:doc "Install FULL git pre-commit hook (lint errors + format + clean-ns + unit tests, slower)"
+                      :task (let [hook (str/trim (:out (shell {:out :string} "git" "rev-parse" "--git-path" "hooks/pre-commit")))]
+                              (spit hook (str "#!/bin/bash\n"
+                                              "# glitter-uikit pre-commit (FULL). Fast: bb hooks:install\n"
+                                              "echo 'pre-commit 1/4: clj-kondo (errors only; known warnings accepted)'\n"
+                                              "clj-kondo --lint src test examples\n"
+                                              "LINT_EXIT=$?\n"
+                                              "if [ \"$LINT_EXIT\" = \"3\" ]; then echo 'pre-commit: lint errors found'; exit 1; fi\n"
+                                              "echo 'pre-commit 2/4: clojure-lsp format --dry'\n"
+                                              "clojure-lsp format --dry || { echo 'run bb lsp:format'; exit 1; }\n"
+                                              "echo 'pre-commit 3/4: clojure-lsp clean-ns --dry'\n"
+                                              "clojure-lsp clean-ns --dry || { echo 'run bb lsp:clean-ns'; exit 1; }\n"
+                                              "echo 'pre-commit 4/4: unit tests'\n"
+                                              "jolt -M:test\n"
+                                              "exit $?\n"))
+                              (shell "chmod" "+x" hook)
+                              (println "OK full pre-commit hook installed")
+                              (println ">> skip once with: git commit --no-verify"))}
+
+  hooks:uninstall {:doc "Remove the git pre-commit hook"
+                   :task (let [hook (str/trim (:out (shell {:out :string} "git" "rev-parse" "--git-path" "hooks/pre-commit")))]
+                           (if (fs/exists? hook)
+                             (do (fs/delete hook) (println "OK pre-commit hook removed"))
+                             (println ">> no pre-commit hook found")))}
+
+  nrepl {:doc "Start a jolt nREPL server for interactive dev: bb nrepl [port] (default 7888)"
+         :task (shell "jolt" "nrepl-server" (or (first *command-line-args*) "7888"))}}}

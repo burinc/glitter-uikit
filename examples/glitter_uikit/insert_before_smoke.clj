@@ -15,7 +15,7 @@
   count-sensitive, so a duplicated subview (4 entries where 3 are expected)
   already fails THAT assertion on length alone. The count check is not
   catching a case the order check would miss — it exists to give a specific,
-  unambiguous failure label ("reorder-no-duplicates") when the failure IS a
+  unambiguous failure label (\"reorder-no-duplicates\") when the failure IS a
   duplication, instead of a generic order mismatch that a reader then has to
   diagnose.
 
@@ -31,7 +31,8 @@
 (defn view [{:keys [items]}]
   (into [:vbox {:spacing 4}]
         (for [i items]
-          [:label {:glitter/key i :label i}])))
+          [:label {:glitter/key i
+                   :label i}])))
 
 (core/set-dispatch! (fn [_ _] nil))
 

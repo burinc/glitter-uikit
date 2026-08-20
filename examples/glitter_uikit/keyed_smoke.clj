@@ -22,12 +22,15 @@
 
 (defonce state (atom {:order ["a" "b" "c"]}))
 
-(def labels {"a" "Item A" "b" "Item B" "c" "Item C"})
+(def labels {"a" "Item A"
+             "b" "Item B"
+             "c" "Item C"})
 
 (defn view [{:keys [order]}]
   (into [:vbox {:spacing 4}]
         (for [k order]
-          [:label {:glitter/key k :label (labels k)}])))
+          [:label {:glitter/key k
+                   :label (labels k)}])))
 
 (core/set-dispatch! (fn [_ _] nil))
 

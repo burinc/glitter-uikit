@@ -53,7 +53,8 @@
 ;; horizontally (NSStackView needs an explicit orientation).
 (deftest with-orientation-injects-from-tag
   (testing ":hbox gets horizontal"
-    (is (= {:spacing 8 :orientation :horizontal} (w/with-orientation :hbox {:spacing 8}))))
+    (is (= {:spacing 8
+            :orientation :horizontal} (w/with-orientation :hbox {:spacing 8}))))
   (testing ":vbox gets vertical"
     (is (= {:orientation :vertical} (w/with-orientation :vbox {}))))
   (testing "an explicit :orientation in props always wins"
@@ -77,10 +78,12 @@
 ;; Asserted at the with-orientation layer, which is the pure part of that path.
 (deftest with-orientation-preserves-explicit-false
   (testing "a false-valued prop survives normalization"
-    (is (= {:active false :orientation :vertical}
+    (is (= {:active false
+            :orientation :vertical}
            (w/with-orientation :vbox {:active false}))))
   (testing "a nil-valued prop also survives normalization (apply-props! filters it later)"
-    (is (= {:label nil :orientation :horizontal}
+    (is (= {:label nil
+            :orientation :horizontal}
            (w/with-orientation :hbox {:label nil})))))
 
 ;; New in glitter-uikit. The Pango :span vocabulary here is a deliberate

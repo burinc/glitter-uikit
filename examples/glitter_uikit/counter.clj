@@ -20,9 +20,12 @@
   [:vbox {:spacing 12}
    [:label {:label (str "Count: " count)}]
    [:hbox {:spacing 8}
-    [:button {:label "− 1" :on {:click [[:action/dec]]}}]
-    [:button {:label "+ 1" :on {:click [[:action/inc]]}}]
-    [:button {:label "reset" :on {:click [[:action/reset]]}}]]])
+    [:button {:label "− 1"
+              :on {:click [[:action/dec]]}}]
+    [:button {:label "+ 1"
+              :on {:click [[:action/inc]]}}]
+    [:button {:label "reset"
+              :on {:click [[:action/reset]]}}]]])
 
 (defn execute-actions [_event actions]
   (doseq [[kind] actions]

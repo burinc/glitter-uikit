@@ -21,11 +21,13 @@
 (defn view [{:keys [count]}]
   [:vbox {:spacing 8}
    [:label {:label (str "Count: " count)}]
-   [:button {:label "+ 1" :on {:click [[:action/inc]]}}]])
+   [:button {:label "+ 1"
+             :on {:click [[:action/inc]]}}]])
 
 (core/set-dispatch!
  (fn [event actions]
-   (swap! dispatched conj {:actions actions :node? (some? (:glitter/node event))})
+   (swap! dispatched conj {:actions actions
+                           :node? (some? (:glitter/node event))})
    (doseq [[kind] actions]
      (when (= :action/inc kind) (swap! state update :count inc)))))
 

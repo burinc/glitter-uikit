@@ -1,0 +1,8 @@
+;; clojure-lsp configuration for glitter-uikit.
+;;
+;; glitter-uikit is a library — its whole point is a public API other projects
+;; call, not one this repo calls internally end-to-end. Without this,
+;; `clojure-lsp diagnostics` flags every genuinely-public entry point as
+;; "unused", which is wrong for a library and makes the linter noisy rather
+;; than a useful signal.
+{:linters {:clojure-lsp/unused-public-var {:level :off}}}
