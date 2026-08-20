@@ -60,10 +60,18 @@ and the stale pair yields plausible but wrong totals.
   5. **`insert-child-after!` added** — absent upstream; `glitter.core`'s
      `insert-before` requires it. One code path serves both a fresh insert and a
      move, because `-[NSStackView insertArrangedSubview:atIndex:]` MOVES an
-     already-arranged subview (measured: `[A B C]` + insert C@0 → `[C A B]`,
-     count unchanged). Notably this is where AppKit is SIMPLER than GTK:
-     `glitter.gtk/insert-before` must branch on whether the child is already
-     parented, because `gtk_box_insert_child_after` asserts an unparented child.
+     already-arranged subview. Notably this is where AppKit is SIMPLER than
+     GTK: `glitter.gtk/insert-before` must branch on whether the child is
+     already parented, because `gtk_box_insert_child_after` asserts an
+     unparented child. **But it is not exactly DOM `insertBefore`:** the call
+     is remove-then-insert internally, and the index it takes is interpreted
+     against the POST-removal array (measured: `[A B C D]` + insert A at index
+     3 → `[B C D A]`). A fresh insert or a backward move is unaffected; a
+     FORWARD move (the child currently sits before the target sibling) needs
+     the un-incremented sibling index, not `(inc i)`, or the child lands one
+     slot too far right. Fixed in this arc's final review (see the git log for
+     `insert-child-after!`'s forward-move fix); pinned by
+     `container_test.clj` and `examples/glitter_uikit/insert_before_smoke.clj`.
   6. **`arranged-index` added, and every index read routed through it.**
      Upstream called `stack-index-of!` and did `(inc i)` on the result.
      `indexOfObject:` returns `NSNotFound` for a non-member, which is

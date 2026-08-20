@@ -3,7 +3,9 @@
   NSStackViews and NSButtons but never run an event loop, so they are safe in a
   plain `jolt -M:test` on macOS. They pin the four fixes carried in from the
   glimmer-uikit review — each corresponds to a real defect in glimmer-uikit
-  v0.1.0."
+  v0.1.0 — plus the forward-keyed-move fix to `insert-child-after!` found in
+  this arc's own final review (a defect in glitter-uikit's new code, not
+  carried from glimmer-uikit)."
   (:require [clojure.test :refer [deftest is testing]]
             [glitter-uikit.ffi :as u]
             [glitter-uikit.widget :as w]))
@@ -42,6 +44,44 @@
       (w/insert-child-after! :box stack c b)
       (is (= ["a" "d" "b" "c"] (texts stack)))
       (is (= 4 (count (w/stack-children stack)))))))
+
+(deftest insert-child-after-forward-move-lands-at-post-removal-index
+  ;; C1 — final-review fix. insertArrangedSubview:atIndex: is remove-then-
+  ;; insert internally and its index is interpreted against the POST-removal
+  ;; array. A forward move (child currently BEFORE the target sibling) needs
+  ;; the un-incremented sibling index; incrementing it (the pre-fix bug)
+  ;; lands the child one slot too far right. Measured headlessly (no window):
+  ;; [1 2 3 4], move "1" to sit after "3" -> want [2 3 1 4]; the buggy code
+  ;; produced [2 3 4 1].
+  (let [stack (w/create! :box {})
+        n1 (labelled "1") n2 (labelled "2") n3 (labelled "3") n4 (labelled "4")]
+    (doseq [v [n1 n2 n3 n4]] (w/append-child! :box stack v))
+    (w/insert-child-after! :box stack n1 n3)
+    (testing "forward move lands immediately after the sibling, not past it"
+      (is (= ["2" "3" "1" "4"] (texts stack))))))
+
+(deftest insert-child-after-backward-move-is-unaffected
+  ;; The backward-move case (child already sits at/after the sibling) was
+  ;; already correct before the fix, because nothing before the sibling
+  ;; shifted on removal — sibling's pre- and post-removal index are the same.
+  ;; Pinned so a future change to the fix doesn't regress this case.
+  (let [stack (w/create! :box {})
+        n3 (labelled "3") n1 (labelled "1") n2 (labelled "2") n4 (labelled "4")]
+    (doseq [v [n3 n1 n2 n4]] (w/append-child! :box stack v))
+    (testing "moving \"1\" to sit after \"3\" is already a no-op"
+      (w/insert-child-after! :box stack n1 n3)
+      (is (= ["3" "1" "2" "4"] (texts stack))))))
+
+(deftest insert-child-after-fresh-mid-list-insert-is-unaffected
+  ;; A fresh (not-yet-arranged) child has no pre-removal position to shift, so
+  ;; it always uses the incremented sibling index. Pinned so the forward-move
+  ;; fix's `ci` check (nil for a fresh child) doesn't regress this case.
+  (let [stack (w/create! :box {})
+        a (labelled "a") b (labelled "b") c (labelled "c") d (labelled "d")]
+    (doseq [v [a b c]] (w/append-child! :box stack v))
+    (testing "a fresh view inserts immediately after the named sibling"
+      (w/insert-child-after! :box stack d a)
+      (is (= ["a" "d" "b" "c"] (texts stack))))))
 
 (deftest arranged-index-is-nsnotfound-safe
   ;; FIX 3. Measured F4: indexOfObject: returns NSIntegerMax for a non-member.

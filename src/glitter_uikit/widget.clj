@@ -578,17 +578,32 @@
 
   ONE code path handles both a fresh insert and a move of an existing child,
   because -[NSStackView insertArrangedSubview:atIndex:] MOVES a view that is
-  already arranged (measured: [A B C] + insert C@0 -> [C A B], count unchanged).
-  This is where AppKit is genuinely simpler than GTK: glitter.gtk/insert-before
-  must branch on whether the child is already tracked, because
-  gtk_box_insert_child_after asserts its child is UNPARENTED and no-ops with a
-  GTK-CRITICAL otherwise. Do not port that branch here."
+  already arranged. This is where AppKit is genuinely simpler than GTK:
+  glitter.gtk/insert-before must branch on whether the child is already
+  tracked, because gtk_box_insert_child_after asserts its child is UNPARENTED
+  and no-ops with a GTK-CRITICAL otherwise. Do not port that branch here.
+
+  BUT the DOM `insertBefore` analogy is misleading, because `insertBefore`
+  takes a reference NODE and AppKit's call takes an INDEX. Measured:
+  insertArrangedSubview:atIndex: is remove-then-insert internally, and the
+  index it takes is interpreted against the POST-removal array ([A B C D] +
+  insert A at index 3 -> [B C D A], not [B C D A] read as \"insert before the
+  view currently at 3\" — the removal of A shifts everything after it left by
+  one BEFORE the index is applied). A fresh insert or a BACKWARD move (child
+  currently at or after sibling) is unaffected: sibling's pre-removal index
+  and post-removal index are the same, since nothing before sibling moved. A
+  FORWARD move (child currently sits before sibling) is not: removing child
+  shifts sibling's index left by one, so inserting at `(inc i)` (i = sibling's
+  PRE-removal index) lands one slot too far right. The un-incremented index i
+  is already correct for that case."
   [parent-tag parent child sibling]
   (when (= :box (container-kind parent-tag))
     (if (nil? sibling)
       (u/stack-insert-arranged! parent child 0)
       (if-let [i (arranged-index parent sibling)]
-        (u/stack-insert-arranged! parent child (inc i))
+        (let [ci     (arranged-index parent child)
+              target (if (and ci (< ci i)) i (inc i))]
+          (u/stack-insert-arranged! parent child target))
         (u/stack-add-arranged! parent child)))
     (maybe-align! parent child))
   nil)

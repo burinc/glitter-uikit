@@ -12,8 +12,12 @@
      is already parented, because gtk_box_insert_child_after asserts an
      UNPARENTED child and no-ops with a GTK-CRITICAL otherwise. Measured live:
      -[NSStackView insertArrangedSubview:atIndex:] MOVES an already-arranged
-     subview ([A B C] + insert C@0 -> [C A B], count unchanged), exactly like
-     DOM insertBefore. One path covers both cases.
+     subview, so no GTK-style parented/unparented branch is needed here. BUT
+     it is NOT exactly like DOM insertBefore: the call is remove-then-insert
+     internally and its index is interpreted against the POST-removal array,
+     so a forward move (child currently before the target sibling) must use
+     the un-incremented sibling index, not `(inc i)` — see
+     `glitter-uikit.widget/insert-child-after!` for the measured detail.
   2. There is no `suppressing?` guard. GTK's programmatic setters synchronously
      re-emit their own signal, so glitter.gtk must gate dispatch on a
      suppression set. AppKit does not fire action or delegate callbacks for

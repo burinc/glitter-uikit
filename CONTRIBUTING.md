@@ -146,13 +146,18 @@ Full provenance (which file ported from where, every documented deviation):
    add one. The property is asserted live by
    `examples/glitter_uikit/keyed_smoke.clj`.
 
-4. **`insert-before` is single-branch on purpose.** Unlike glitter.gtk, which
+4. **`insert-before` is single-branch on purpose, but the index is
+   post-removal, not a DOM reference node.** Unlike glitter.gtk, which
    branches on whether a child is already tracked in the parent's children
    list (reorder vs. insert), glitter-uikit's `insert-before` is a single
    code path — AppKit's `insertArrangedSubview:atIndex:` automatically moves
    an already-parented subview instead of asserting it's unparented like GTK
-   does. See `docs/guide/appkit-widget-layer.md`'s "Where AppKit is simpler"
-   section for the measured behavior and evidence.
+   does. It is NOT DOM `insertBefore`, though: the call is remove-then-insert
+   internally and the index is interpreted against the POST-removal array, so
+   a forward move (child currently before the target sibling) must use the
+   un-incremented sibling index, not `(inc i)`. See
+   `docs/guide/appkit-widget-layer.md`'s "Where AppKit is simpler" section for
+   the measured behavior and evidence.
 
 5. **Every index read goes through `arranged-index`.** NSStackView's children
    are accessed via `arrangedSubviews` array indexing, which can raise an

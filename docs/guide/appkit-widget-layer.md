@@ -67,7 +67,8 @@ child. The real GTK API for repositioning is `gtk_box_reorder_child_after`.
 
 AppKit's `insertArrangedSubview:atIndex:` handles both uniformly — it
 automatically MOVES an already-arranged subview if you pass one of the
-stack's own children. Measured live:
+stack's own children, so no GTK-style parented/unparented branch is needed.
+Measured live:
 
 ```clojure
 ;; Starting state: [A B C]
@@ -76,9 +77,25 @@ stack's own children. Measured live:
 ;; Count: unchanged
 ```
 
-So `glitter-uikit.widget/insert-child-after!` is a single code path
-serving both a fresh insert and a keyed move, identical to DOM's
-`insertBefore` auto-move semantics.
+So `glitter-uikit.widget/insert-child-after!` is a single code path serving
+both a fresh insert and a keyed move — **but it is not identical to DOM's
+`insertBefore`**. `insertBefore` takes a reference *node*; AppKit's call
+takes an *index*, and that index is remove-then-insert internally,
+interpreted against the **post-removal** array:
+
+```clojure
+;; Starting state: [A B C D]
+;; Insert A at index 3 (A is already arranged, at index 0)
+;; Result: [B C D A]   -- NOT "insert before whatever is now at index 3"
+```
+
+A fresh insert or a *backward* move (the child already sits at or after the
+target sibling) is unaffected, because nothing before the sibling shifted.
+A *forward* move (the child currently sits before the sibling) needs the
+un-incremented sibling index rather than `(inc i)`, or the child lands one
+slot too far right — a real bug this port shipped and fixed during final
+review; see `insert-child-after!`'s docstring in `widget.clj` for the full
+measured detail.
 
 ### No suppression set needed
 
