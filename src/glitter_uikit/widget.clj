@@ -424,9 +424,9 @@
 
 (defn register-widget!
   "Register a widget spec under hiccup `tag`. A spec is
-  {:ctor (fn [props] view) :apply (fn [view props]) :container kw
-   :connect (fn [view props])?}. :container is :none for a leaf, or :box /
-  :window / :frame / :scrolled to reuse an existing child-management strategy."
+  {:ctor (fn [props] view) :apply (fn [view props]) :container kw}.
+  :container is :none for a leaf, or :box / :window / :frame / :scrolled to
+  reuse an existing child-management strategy."
   [tag spec] (swap! specs assoc tag spec) nil)
 
 (defn- spec-for [tag] (@specs (normalize-tag tag)))
