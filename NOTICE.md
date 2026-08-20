@@ -23,10 +23,15 @@ the claim is falsifiable:
 | `glimmer` | `upstream/main` | `55e38f0` | 2026-08-18 | 29 | `Yogthos` 25, `Dmitri Sotnikov` 4 |
 | `glimmer-gl` | `origin/main` | `ae9a532` | 2026-08-13 | 20 | `Yogthos` 19, `Dmitri Sotnikov` 1 |
 
-Zero commits by any other author in any of the three; the two identities are the
-same person. Counts are pinned to the SHAs above because two checkouts of
-`glimmer` and `glimmer-gl` exist locally and the stale pair yields plausible but
-wrong totals.
+Zero commits by any other author in any of the three. `Yogthos` and `Dmitri
+Sotnikov` are two distinct git identities — different names and different
+email addresses (`yogthos@gmail.com` vs `dmitri.sotnikov@gmail.com`). They are
+widely identified elsewhere as the same person, but git history alone does not
+establish that, and this document doesn't claim it does. It doesn't need
+settling either way: neither identity is glitter-uikit's author, so "different
+author" and "no grant has been made" hold regardless. Counts are pinned to the
+SHAs above because two checkouts of `glimmer` and `glimmer-gl` exist locally
+and the stale pair yields plausible but wrong totals.
 
 - `src/glitter_uikit/ffi.clj` — `src/glimmer_uikit/ffi.clj`. Near-verbatim:
   namespace substitution only (4 lines), plus one added binding, `control-state`
