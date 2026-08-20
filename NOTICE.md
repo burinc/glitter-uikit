@@ -205,3 +205,35 @@ b12n-rljlt — see glitter-gl's own NOTICE.md.
   deviation entry and review. Not a bug in `insert-child-after!`'s sense —
   a cross-renderer default that happens to differ, previously undocumented.
   (Final-review finding, 2026-08-20.)
+- **The CI workflow has never been executed.** `.github/workflows/tests.yml`
+  is `on: [workflow_dispatch]` only — deliberately, since the project owner
+  has no GitHub Actions credit budget and nothing should run automatically.
+  Its correctness rests on reading alone, not on a completed run. The
+  workflow's second checkout step fetches `burinc/glitter` as a sibling
+  directory (needed for `deps.edn`'s `:local/root "../glitter"`) using the
+  job's default `GITHUB_TOKEN`, which GitHub scopes to the triggering
+  repository only — if `burinc/glitter` is private, that step has no
+  credentials to succeed with, and the first manual run may fail there.
+  Nothing downstream (installing jolt, installing GTK4, `jolt -M:test`
+  itself) has run in that environment either, since the workflow would
+  never reach it if the checkout fails. Previously disclosed only in a
+  comment on that checkout step in the workflow file, not recorded here.
+  (Docs pass, 2026-08-21.)
+- **The thunk-queue drain fix has no adversarial-concurrency test.**
+  `glitter-uikit.app`'s scheduler drains its posted-work queue with the
+  atomic `swap-vals!` fix described above, replacing the non-atomic
+  deref-then-reset that could silently drop a concurrently posted thunk.
+  That fix executes under real cross-thread posting in
+  `main_thread_smoke.clj` and `repl_live_smoke.clj` — both post from a
+  genuinely different thread than the main AppKit pump, and both pass —
+  but neither drives contention: each has exactly one worker thread
+  posting exactly once, not several threads racing to post while
+  `perform`'s drain is itself mid-flight, which is the specific race
+  `swap-vals!` closes. That the CAS is correct follows from
+  `swap-vals!`'s own atomic-primitive contract (a concurrent post lands
+  either before or after a given drain, never in the gap between deref
+  and reset); that the drain behaves correctly *under actual contention*
+  is untested — testing it properly needs multiple threads posting
+  concurrently against a live, actually-pumping `CFRunLoop`, which is not
+  something the headless `jolt -M:test` suite can set up at all, and not
+  something any current smoke was written to do. (Docs pass, 2026-08-21.)
