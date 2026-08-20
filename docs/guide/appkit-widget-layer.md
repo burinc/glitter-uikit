@@ -10,11 +10,27 @@ measured rather than assumed.
 
 ```clojure
 (def specs
-  (atom {:window (window-spec) :box (box-spec) :hbox (hbox-spec)
-         :vbox (vbox-spec) :button (button-spec) :label (label-spec)
-         :entry (entry-spec) :checkbutton (checkbutton-spec)
-         :separator (separator-spec) :frame (frame-spec)
-         :scrolled (scrolled-spec)}))
+  (atom {:window      (window-spec)
+         :box         (box-spec)
+         :button      (button-spec)
+         :label       (label-spec)
+         :entry       (entry-spec)
+         :checkbutton (checkbutton-spec)
+         :separator   (separator-spec)
+         :frame       (frame-spec)
+         :scrolled    (scrolled-spec)}))
+```
+
+Nine tags, and `:hbox`/`:vbox` are not among them. They are sugar, resolved by a
+separate two-step mechanism rather than by their own specs: `aliases` maps both
+onto `:box`, `normalize-tag` applies that map, and `spec-for` looks the
+normalized tag up — while `with-orientation` injects the implied `:orientation`
+prop so a bare `[:hbox …]` lays out horizontally without the caller saying so.
+
+```clojure
+(def ^:private aliases {:hbox :box :vbox :box})
+(defn- normalize-tag [tag] (get aliases tag tag))
+(defn- spec-for [tag] (@specs (normalize-tag tag)))
 ```
 
 Each spec is `{:ctor (fn [props] view) :apply (fn [view props]) :container kw}`.

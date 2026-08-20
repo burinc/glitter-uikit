@@ -73,9 +73,14 @@ glitter and b12n-rljlt — see glitter-gl's own NOTICE.md.
 
 ## Licensing
 
-This project (glitter-uikit) is published by burinc under no explicit license
-— the same copyright-reserve position glimmer-uikit holds. The ported files
-from glimmer-uikit carry their original attribution in `NOTICE.md`.
+`glitter-uikit` itself is **MIT-licensed** — see `LICENSE`, Copyright 2026 Burin
+Choomnuan. That grant covers this project's own code: the AppKit FFI bindings,
+the widget layer's reshaping, the renderer, the app loop, the examples and the
+docs.
 
-See `LICENSE` for legal coverage of the AppKit FFI bindings and new code
-(licensed to the extent of the author's copyright).
+That is a separate question from the status of the code ported IN, and the two
+must not be run together. Upstream `glimmer-uikit` ships **no LICENSE file**, so
+absent one, default copyright reserves all rights and no grant has been made for
+those files. `NOTICE.md` records that accurately and file by file. This
+project's MIT grant does not extend to the upstream material it vendors, and
+nothing here should be read as claiming otherwise.

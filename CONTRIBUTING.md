@@ -108,7 +108,7 @@ Full topic breakdown: `docs/guide/index.md`.
 | `examples/glitter_uikit/main_thread_smoke.clj` | Off-thread state changes render on the NSApplication main thread |
 | `examples/glitter_uikit/reactivity_smoke.clj` | Live state-atom reactivity — view recomputes on atom changes |
 | `examples/glitter_uikit/repl_live_smoke.clj` | nREPL-driven live editing — redefine functions and hot-reload |
-| `test/glitter_uikit/*_test.clj` | Unit suite mirroring glimmer-uikit's structure, one test file per src file |
+| `test/glitter_uikit/*_test.clj` | Unit suite mirroring glimmer-uikit's structure, covering the four source namespaces plus helper utilities |
 | `test/glitter_uikit/test_runner.clj` | Test-suite entry point (`jolt -M:test`) |
 
 Full provenance (which file ported from where, every documented deviation):
