@@ -1,9 +1,10 @@
 Copyright 2026 Burin Choomnuan
 
-This project vendors third-party code under its own copyright — most notably
-substantial portions of Replicant (Copyright 2023-2025 Christian Johansen,
-MIT). See NOTICE.md for the file-by-file provenance and the full text of the
-upstream license, which applies to those files in addition to this one.
+The permission below covers this project's own code. Portions of this
+codebase are forked from third-party material that ships under DIFFERENT
+terms — some of it with no license grant at all. See NOTICE.md for the
+file-by-file provenance, including the glimmer-uikit-derived material this
+repo carries under no license.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
