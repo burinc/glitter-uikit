@@ -21,6 +21,8 @@
  ;; Each runnable has its own alias with :main-opts (jolt's -M:alias form needs
  ;; main-opts). Tasks are thin wrappers so you can run `jolt counter`, etc.
  :aliases {:test    {:extra-paths ["test" "examples"]
-                     :main-opts ["-m" "glitter-uikit.test-runner"]}}
+                     :main-opts ["-m" "glitter-uikit.test-runner"]}
+           :smoke   {:extra-paths ["examples"] :main-opts ["-m" "glitter-uikit.smoke"]}}
 
- :tasks {test "jolt -M:test"}}
+ :tasks {test "jolt -M:test"
+         smoke "jolt -M:smoke"}}

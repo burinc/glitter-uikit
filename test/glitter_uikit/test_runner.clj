@@ -36,7 +36,8 @@
   (let [namespaces '[glitter-uikit.scaffold-test
                      glitter-uikit.ffi-test
                      glitter-uikit.container-test
-                     glitter-uikit.widget-test]]
+                     glitter-uikit.widget-test
+                     glitter-uikit.appkit-test]]
     (doseq [ns namespaces]
       (try (require ns :reload)
            (catch Exception e
