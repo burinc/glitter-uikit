@@ -1,0 +1,94 @@
+(ns glitter-uikit.widget-test
+  "Headless tests for the widget layer's pure functions. No AppKit needed —
+  these exercise string logic only, so `jolt -M:test` runs on CI (Linux) too."
+  (:require [clojure.test :refer [deftest is testing]]
+            [glitter-uikit.widget :as w]))
+
+(deftest escape-markup-escapes-pango-significant-chars
+  (testing "leaves plain text untouched"
+    (is (= "no special chars" (w/escape-markup "no special chars"))))
+  (testing "escapes ampersand first so later escapes don't double-encode"
+    (is (= "a &amp; b" (w/escape-markup "a & b"))))
+  (testing "escapes angle brackets"
+    (is (= "&lt;tag&gt;" (w/escape-markup "<tag>"))))
+  (testing "all three together"
+    (is (= "&lt;b&gt;a &amp; b&lt;/b&gt;" (w/escape-markup "<b>a & b</b>")))))
+
+;; markup: hiccup data -> Pango string, validated against Pango's vocabulary.
+;; See glitter-uikit.widget/markup. Headless — no AppKit needed.
+(deftest markup-renders-pango-from-hiccup
+  (testing "span with attributes"
+    (is (= "<span foreground=\"#8e939d\">Nothing to do yet</span>"
+           (w/markup [:span {:foreground "#8e939d"} "Nothing to do yet"]))))
+  (testing "attribute map is optional"
+    (is (= "<b>bold</b>" (w/markup [:b "bold"]))))
+  (testing "nested elements"
+    (is (= "<b><i>x</i></b>" (w/markup [:b [:i "x"]]))))
+  (testing "a number child is stringified"
+    (is (= "<b>3</b>" (w/markup [:b 3]))))
+  (testing "mixed content inside a span"
+    (is (= "<span><b>a</b> <i>b</i></span>" (w/markup [:span [:b "a"] " " [:i "b"]]))))
+  (testing "link via <a>"
+    (is (= "<a href=\"https://example.com\">link</a>"
+           (w/markup [:a {:href "https://example.com"} "link"])))))
+
+(deftest markup-escapes-content-and-attribute-values
+  (testing "text nodes are escaped"
+    (is (= "<b>a &amp; b &lt; c</b>" (w/markup [:b "a & b < c"]))))
+  (testing "attribute values escape quotes so the attr can't break out"
+    (is (= "<span foreground=\"a&quot;b\">x</span>"
+           (w/markup [:span {:foreground "a\"b"} "x"])))))
+
+;; markup-string coerces a :markup prop: strings pass through, hiccup renders.
+(deftest markup-string-coerces-prop
+  (testing "a string is already markup — passed through verbatim"
+    (is (= "<b>x</b>" (w/markup-string "<b>x</b>")))
+    (is (= "plain" (w/markup-string "plain"))))
+  (testing "hiccup is rendered (and its text escaped) via markup"
+    (is (= "<span foreground=\"#888\">a &amp; b</span>"
+           (w/markup-string [:span {:foreground "#888"} "a & b"])))))
+
+;; :hbox/:vbox are NSStackViews; orientation distinguishes them.
+;; with-orientation injects it from the tag so a bare [:hbox ...] lays out
+;; horizontally (NSStackView needs an explicit orientation).
+(deftest with-orientation-injects-from-tag
+  (testing ":hbox gets horizontal"
+    (is (= {:spacing 8 :orientation :horizontal} (w/with-orientation :hbox {:spacing 8}))))
+  (testing ":vbox gets vertical"
+    (is (= {:orientation :vertical} (w/with-orientation :vbox {}))))
+  (testing "an explicit :orientation in props always wins"
+    (is (= {:orientation :vertical} (w/with-orientation :hbox {:orientation :vertical}))))
+  (testing "non-box tags are untouched"
+    (is (= {:label "x"} (w/with-orientation :button {:label "x"})))
+    (is (= {} (w/with-orientation :box {})))))
+
+(deftest markup-rejects-things-pango-cannot-parse
+  (testing "unsupported tag (e.g. an HTML-only tag) throws"
+    (is (thrown? Exception (w/markup [:div "x"])))
+    (is (thrown? Exception (w/markup [:br]))))
+  (testing "unknown span attribute (a typo) throws"
+    (is (thrown? Exception (w/markup [:span {:forground "#fff"} "x"]))))
+  (testing "attributes on an attribute-less tag like <b> throw"
+    (is (thrown? Exception (w/markup [:b {:weight "bold"} "x"])))))
+
+;; New in glitter-uikit. apply-props! filters on some?, not truthiness — an
+;; explicit false (:sensitive false, :active false) is a real value that must
+;; reach the view, mirroring glitter.core's own deviation #3 from Replicant.
+;; Asserted at the with-orientation layer, which is the pure part of that path.
+(deftest with-orientation-preserves-explicit-false
+  (testing "a false-valued prop survives normalization"
+    (is (= {:active false :orientation :vertical}
+           (w/with-orientation :vbox {:active false}))))
+  (testing "a nil-valued prop also survives normalization (apply-props! filters it later)"
+    (is (= {:label nil :orientation :horizontal}
+           (w/with-orientation :hbox {:label nil})))))
+
+;; New in glitter-uikit. The Pango :span vocabulary here is a deliberate
+;; SUPERSET of glitter.widget's: glimmer-uikit accepts :color as an alias for
+;; :foreground and markup->attributed reads it. Recorded in NOTICE.md; pinned
+;; here so a later "align with glitter" pass can't silently drop it.
+(deftest span-accepts-color-alias
+  (testing ":color is accepted alongside :foreground"
+    (is (= "<span color=\"#888888\">x</span>" (w/markup [:span {:color "#888888"} "x"]))))
+  (testing ":foreground still works"
+    (is (= "<span foreground=\"#888888\">x</span>" (w/markup [:span {:foreground "#888888"} "x"])))))
