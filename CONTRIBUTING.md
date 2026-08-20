@@ -98,18 +98,18 @@ Full topic breakdown: `docs/guide/index.md`.
 | `src/glitter_uikit/ffi.clj` | AppKit/Foundation FFI bindings (`jolt.ffi/defcfn` forms) |
 | `src/glitter_uikit/widget.clj` | Hiccup tag → NSView mapping; widget spec registry; prop appliers; container strategies (ordered box vs. single-child window/frame/scrolled) |
 | `src/glitter_uikit/appkit.clj` | `IRender` protocol (create/update/remove/insert-before); `IMemory` protocol (ref management); glitter.core integration |
-| `src/glitter_uikit/app.clj` | `NSApplication` event loop and `-main`; `run` function for mounting hiccup against a window |
+| `src/glitter_uikit/app.clj` | `NSApplication` event loop and cross-thread marshalling; `run` builds a window and calls the caller's `on-activate` to mount into it (mounting itself is `glitter-uikit.appkit/mount!`, not this namespace). No `-main` here — see the `examples/*` entries below for that |
 | `examples/glitter_uikit/counter.clj` | Counter demo — state atom + view function + action dispatch |
 | `examples/glitter_uikit/todo.clj` | Task-board demo — derived counts, entry/checkbox list |
 | `examples/glitter_uikit/smoke.clj` | Basic smoke: mount a tree and run the loop without exception |
-| `examples/glitter_uikit/keyed_smoke.clj` | Keyed reorder — verifies live AppKit widget order via `-firstChild`/`-nextSibling` |
+| `examples/glitter_uikit/keyed_smoke.clj` | Keyed reorder — verifies live AppKit widget order via `glitter-uikit.widget/stack-children` (reads `arrangedSubviews`, not GTK4's `-firstChild`/`-nextSibling`) |
 | `examples/glitter_uikit/replace_child_smoke.clj` | Replaced child stays at its position, not the end |
 | `examples/glitter_uikit/insert_before_smoke.clj` | Child insertion — live AppKit order |
 | `examples/glitter_uikit/handler_cleanup_smoke.clj` | Event handler lifecycle — wiring/unwiring on mount/update/unmount |
 | `examples/glitter_uikit/main_thread_smoke.clj` | Off-thread state changes render on the NSApplication main thread |
 | `examples/glitter_uikit/reactivity_smoke.clj` | Live state-atom reactivity — view recomputes on atom changes |
 | `examples/glitter_uikit/repl_live_smoke.clj` | nREPL-driven live editing — redefine functions and hot-reload |
-| `test/glitter_uikit/*_test.clj` | Unit suite mirroring glimmer-uikit's structure, covering the four source namespaces plus helper utilities |
+| `test/glitter_uikit/*_test.clj` | Unit suite covering `ffi.clj`, `widget.clj` (`widget_test.clj` and `container_test.clj`), and `appkit.clj`, plus `scaffold_test.clj` for the `:local/root` glitter dependency. `app.clj` has no dedicated test file |
 | `test/glitter_uikit/test_runner.clj` | Test-suite entry point (`jolt -M:test`) |
 
 Full provenance (which file ported from where, every documented deviation):
@@ -159,14 +159,17 @@ Full provenance (which file ported from where, every documented deviation):
    `docs/guide/appkit-widget-layer.md`'s "Where AppKit is simpler" section for
    the measured behavior and evidence.
 
-5. **Every index read goes through `arranged-index`.** NSStackView's children
-   are accessed via `arrangedSubviews` array indexing, which can raise an
-   uncatchable `NSException` if the index is out of bounds or equals
-   `NSNotFound` (which is `NSIntegerMax`, not `-1`). A raw index access that
-   silently misses can cascade into worse bugs downstream. `arranged-index`
-   guards every read.
+5. **Every index read goes through `arranged-index`.** The hazard is a
+   WRITE, not a read: `indexOfObject:` returns `NSNotFound` (which is
+   `NSIntegerMax`, not `-1`) for a non-member, and feeding
+   `NSNotFound + 1` to `insertArrangedSubview:atIndex:` raises an
+   uncatchable `NSException` that **aborts the process** — a Clojure
+   `catch :default` does not intercept it, because Objective-C exceptions
+   do not unwind into Scheme. `arranged-index` guards every index read by
+   returning `nil` for "absent" instead of a sentinel that could reach
+   that arithmetic.
 
-6. **Never `(resolve 'System/exit)`.** It is always nil in Jolt/ClojureDart.
+6. **Never `(resolve 'System/exit)`.** It is always nil in Jolt.
    Call `System/exit` directly or the smoke that needs an exit code will exit
    0. Verified live — a smoke that catches exceptions and tries to exit with
    a non-zero code via `(when-let [exit (resolve 'System/exit)] (exit 1))`
@@ -206,8 +209,11 @@ glitter's own examples.
 
 Known v1 limitations, inherited unmodified from glimmer-uikit: `:class`
 and `:style` props are silently accepted but do nothing (AppKit has no
-CSS); no `hiccup?` validation on `:style` contents (unlike glitter.gtk,
-which validates Pango markup); the `insert-before` single-branch design
-(see gotcha #4) means keyed re-orders work but the single-branch shape
-(no reorder API separate from insert) is less obvious than GTK's explicit
-`gtk_box_reorder_child_after` call.
+CSS), and there is no validation on `:style` contents at all. (Unrelated
+to `:style`: this port DOES validate a label's `:markup` prop against
+Pango's tag/attribute vocabulary — `markup-validate!`, `widget.clj`, pinned
+by `markup-rejects-things-pango-cannot-parse` — the same validation
+glitter.gtk performs for its own `:markup` prop.) The `insert-before`
+single-branch design (see gotcha #4) means keyed re-orders work but the
+single-branch shape (no reorder API separate from insert) is less obvious
+than GTK's explicit `gtk_box_reorder_child_after` call.

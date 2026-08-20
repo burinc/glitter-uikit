@@ -28,8 +28,12 @@ Ported files:
 - `examples/glitter_uikit/*.clj` — layouts/scenarios follow
   `examples/glimmer_uikit/*`
 
-The port carries **four defects fixed during porting** plus **a fifth fix**:
+The port carries three **deliberate model adaptations** (required because
+glitter's architecture differs from glimmer's, not because upstream was
+wrong for glimmer), plus **real defect fixes** in `widget.clj` and
+`app.clj`:
 
+Model adaptations:
 1. **Event lifecycle ownership split** — glitter calls `set-event-handler`
    whenever handler data changes, so `glitter-uikit.appkit` owns the
    lifecycle end to end. `connect-signals!` was removed rather than adapted.
@@ -37,10 +41,27 @@ The port carries **four defects fixed during porting** plus **a fifth fix**:
    avoid collision if both run in the same process.
 3. **Prop filtering on `some?`** — allowing explicit `false` to reach views
    (e.g. `:active false`, `:sensitive false`), not treating it as "absent".
+
+Real defect fixes:
 4. **`replace-child!` position preservation** — captures index before
    removing and re-inserts at the same position (the identical defect glitter
    fixed on the GTK side).
-5. **`app.clj` fixes** — (a) thunk queue drain made atomic (CAS-based
+5. **`insert-child-after!` added, then its own forward-move bug fixed** —
+   absent upstream entirely; glitter.core's `insert-before` requires it. The
+   first version incremented a moved child's target index unconditionally,
+   which overshoots by one slot on a forward keyed move (the child currently
+   sits before its target sibling), because AppKit's insert is
+   remove-then-insert with a post-removal index. Fixed in this arc's final
+   review.
+6. **`arranged-index` added, guarding every index read** — upstream did
+   `(inc i)` on a raw `stack-index-of!` result, which aborts the process
+   (uncatchably) when the sibling is absent, since `NSNotFound` is
+   `NSIntegerMax`. `arranged-index` returns `nil` for "absent" instead.
+7. **`forget-view!` added, called from `remove-child!`** — upstream's
+   `actions`/`changes`/`alignments` registries were never cleaned, an
+   unbounded leak and a stale-handler hazard (AppKit reuses freed
+   addresses).
+8. **`app.clj` fixes** — (a) thunk queue drain made atomic (CAS-based
    `swap-vals!`), (b) `run*` flag ordering (set flags before calling
    `on-activate` so they are visible inside it), and (c) `on-gui`'s three-way
    branch (inline when headless, inline when already on-thread, marshal

@@ -50,10 +50,15 @@ append/remove/reorder via `NSStackView`), `:window`/`:frame`/`:scrolled`
 | `:frame` | `NSBox` (titled) | Single child |
 | `:scrolled` | `NSScrollView` | Single child (document view) |
 
-`create!` builds a view end-to-end: construct, apply props, then run the
-widget spec's `:apply` closure for signal lifecycle. Unlike `glitter.gtk`,
-which carries a suppress set and re-connects signals on every render,
-`glitter-uikit` has neither — see "Where AppKit is simpler" below.
+`create!` builds a view end-to-end: construct via the widget spec's
+`:ctor`, then apply props via its `:apply` closure — `:apply` *is* the
+prop applier, not a separate step that runs after props are applied.
+`create!` does no signal wiring at all: unlike `glimmer-uikit`'s original,
+event lifecycle belongs entirely to `glitter-uikit.appkit`, which calls
+`IRender/set-event-handler` whenever handler *data* changes between
+renders — not on every render, and not for `glitter.gtk` either, which
+calls its equivalent under the same "data changed" condition — see "Where
+AppKit is simpler" below.
 
 ## Where AppKit is simpler than GTK
 
@@ -108,8 +113,8 @@ AppKit does NOT fire action or delegate callbacks for programmatic
 `setState:`/`setStringValue:`/etc., so there is nothing to suppress. This
 absence is intentional — do not add a suppression set. The property is
 asserted live by `examples/glitter_uikit/keyed_smoke.clj`'s
-`programmatic-active-does-not-dispatch` test, which sets a button's state
-programmatically and verifies no action callback fires.
+`programmatic-active-does-not-dispatch` test, which sets a checkbutton's
+state programmatically and verifies no action callback fires.
 
 ## Where AppKit needs more care than GTK
 
@@ -124,9 +129,13 @@ an uncatchable `NSException` that **aborts the process**. A Clojure `catch
 unwind into Scheme.
 
 **Solution:** Every index read goes through `arranged-index`, which checks
-bounds before use and throws a catchable error if the view is not found.
-Verified live — an index access that misses silently would cascade into
-worse bugs downstream, so this is load-bearing.
+for `NSNotFound`/negative results and returns **`nil`** for "absent" —
+it throws nothing. Every caller (`insert-child-after!`, `replace-child!`)
+is written to handle that `nil`, falling through to a safe branch
+(append) instead of ever reaching the arithmetic that would produce a
+process-aborting index. Verified live — an index access that misses
+silently would cascade into worse bugs downstream, so this is
+load-bearing.
 
 ### `removeArrangedSubview:` leaves a plain subview
 
@@ -143,8 +152,9 @@ actual view hierarchy.
 ### Pointer-keyed registries and cleanup
 
 `glitter-uikit.widget` maintains several registries (`:actions`,
-`:changes`, `:alignments`) keyed by view pointer. Views passed to `remove!`
-or replaced must be explicitly cleaned up via `forget-view!`, or the
+`:changes`, `:alignments`) keyed by view pointer. Views passed to
+`remove-child!` or replaced must be explicitly cleaned up via
+`forget-view!`, or the
 registries will grow unbounded and accumulate stale handlers that, because
 AppKit reuses freed addresses, can be inherited by new views landing on
 dead views' addresses.
@@ -153,53 +163,63 @@ dead views' addresses.
 view. If cleanup is skipped, a re-created view can silently inherit
 handlers from a previous view that occupied the same memory.
 
-## The four carried fixes
+## Model adaptations vs. real defect fixes
 
-### 1. Event lifecycle ownership split
+The port made three changes that are **deliberate model adaptations**, not
+fixes for bugs in glimmer-uikit — each is required because glitter's
+architecture differs from glimmer's own, not because the original code was
+wrong for glimmer:
 
-**Problem:** Upstream (glimmer-uikit) connects target/action once at mount
-and lets handlers close over a reactive cell. Glitter calls
-`IRender/set-event-handler` whenever handler *data* changes between
-renders — not just on mount/unmount.
+1. **Event lifecycle ownership split.** Upstream (glimmer-uikit) connects
+   target/action once at mount and lets handlers close over a reactive
+   cell — correct for glimmer's own Reagent-style model. glitter calls
+   `IRender/set-event-handler` whenever handler *data* changes between
+   renders, not just on mount/unmount, and two writers of
+   `setTarget:`/`setAction:` would fight — so `connect-signals!` was
+   removed rather than adapted, and event wiring moved entirely to
+   `glitter-uikit.appkit`'s `IRender/set-event-handler`.
+2. **`GlitterTarget` class registration.** Renamed from upstream's
+   `"GlimmerTarget"` (registered process-wide via `objc_allocateClassPair`)
+   so the two classes are distinguishable if glitter and glitter-uikit ever
+   ran in the same process — not a bug fix, just a name collision avoided.
+3. **Prop filtering on `some?`.** Upstream's `apply-props!` filters on
+   truthiness; here it filters on `some?` so an explicit `false`
+   (`:active false`, `:sensitive false`) still reaches the view. Needed
+   because glitter's own `apply-props!` makes the same `some?` choice for
+   the same reason (deviation #3 from Replicant) — matching the caller's
+   contract, not repairing upstream.
 
-**Fix:** `glitter-uikit.appkit` owns signal lifecycle end to end. Two
-writers of `setTarget:`/`setAction:` would fight if glitter-uikit tried to
-adapt upstream's model, so `connect-signals!` was removed and event wiring
-moved entirely to `glitter-uikit.appkit`'s `IRender/set-event-handler`.
+Three further changes ARE real defect fixes — bugs that would misbehave
+regardless of which reconciler drives them:
 
-### 2. `GlitterTarget` class registration avoids collision
-
-**Problem:** Upstream registers an Objective-C class named
-`"GlimmerTarget"` via `objc_allocateClassPair`. This is process-wide — if
-glitter and glitter-uikit ran in the same process (e.g. in a mixed app),
-the second caller would find the first's existing class and reuse it,
-silently handing back glimmer's callbacks and handler registries.
-
-**Fix:** Rename to `"GlitterTarget"`, making the two classes
-distinguishable.
-
-### 3. Prop filtering and falsy values
-
-**Problem:** Upstream's `apply-props!` filtered on truthiness, treating
-`false` the same as "absent". In AppKit, a checkbutton's `:active false` or
-a widget's `:sensitive false` is a real, meaningful boolean value that must
-reach the view, not get silently treated as "not set".
-
-**Fix:** Filter on `some?` instead of truthiness, so explicit `false` still
-reaches the view. Verified live against real AppKit state.
-
-### 4. `replace-child!` captures position before removing
-
-**Problem:** Upstream did `removeArrangedSubview:` then `addArrangedSubview:`,
-which always inserts at the END of the stack. Replacing a non-final child
-silently relocated it there, desyncing every caller's positional tracking.
-This is the identical defect glitter fixed on the GTK side (see glitter's
-NOTICE.md).
-
-**Fix:** Capture the old child's index before removing it, then insert the
-new child at that same position. With AppKit's auto-move semantics, a
-single `insertArrangedSubview:atIndex:` call after the remove lands it
-correctly.
+1. **`replace-child!` captures position before removing.** Upstream did
+   `removeArrangedSubview:` then `addArrangedSubview:`, which always
+   inserts at the END of the stack — replacing a non-final child silently
+   relocated it there. This is the identical defect glitter fixed on the
+   GTK side (see glitter's NOTICE.md). Fix: capture the old child's index
+   before removing it, then insert the new child at that same position.
+2. **`insert-child-after!` added, then its forward-move index fixed.**
+   Absent upstream entirely — glimmer's reconciler never needs it, but
+   glitter.core's `insert-before` does. The first version carried a real
+   bug of its own: `insertArrangedSubview:atIndex:` is remove-then-insert
+   internally with a POST-removal index, and the added code incremented
+   the sibling's PRE-removal index unconditionally, so a forward keyed
+   move (the moved child currently sits before its target sibling) landed
+   one slot too far right. Fixed during this arc's final review — see
+   "insert-before is single-branch" above and `insert-child-after!`'s
+   docstring in `widget.clj`.
+3. **`arranged-index` added, and every index read routed through it.**
+   Upstream called `stack-index-of!` directly and did `(inc i)` on the
+   result — a process abort waiting to happen whenever the sibling was
+   absent (`NSNotFound` is `NSIntegerMax`, and feeding `NSNotFound + 1` to
+   `insertArrangedSubview:atIndex:` aborts the process uncatchably). Fix:
+   `arranged-index` returns `nil` for "absent" instead, and every caller
+   handles it.
+4. **`forget-view!` added, and `remove-child!` calls it.** Upstream's
+   `actions`/`changes`/`alignments` registries were never cleaned — an
+   unbounded leak, and a stale-handler hazard: because AppKit reuses freed
+   addresses, a newly allocated view could land on a dead view's address
+   and inherit its handler.
 
 ---
 

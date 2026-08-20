@@ -187,3 +187,21 @@ b12n-rljlt — see glitter-gl's own NOTICE.md.
   `"a&quot;b"` and throws `bad hex digit &`. Present upstream (whose own test
   asserts the escaped form is produced) and carried forward deliberately — the
   fix is to decode entities before `parse-attrs`, which deserves its own task.
+- **A bare `[:box …]` renders HORIZONTAL here and VERTICAL under
+  `glitter.gtk`.** `glitter.gtk/box-spec`'s `:ctor` constructs
+  `(gtk-box-new 1 …)` — `1` is `GTK_ORIENTATION_VERTICAL` — so a box with no
+  `:orientation` prop defaults to vertical there. `glitter-uikit.widget`'s
+  `box-spec` constructs via bare `(u/stack-new)` and only calls
+  `stack-orientation!` `(when (contains? p :orientation) …)`; `NSStackView`'s
+  own un-set default is horizontal. Measured:
+  `(u/stack-orientation (w/create! :box {}))` → `0` (`ORIENTATION-HORIZONTAL`).
+  A glitter view built for GTK using bare `[:box …]` (rather than `:hbox`/
+  `:vbox`, which both inject an explicit `:orientation` via
+  `with-orientation`) renders rotated 90° under this renderer, silently — no
+  error, no warning. `:hbox`/`:vbox` are unaffected and portable either way.
+  Deliberately left as a documented gap rather than changed: matching
+  glitter.gtk's default here would itself be a deviation from the
+  glimmer-uikit source this file was ported from, and would need its own
+  deviation entry and review. Not a bug in `insert-child-after!`'s sense —
+  a cross-renderer default that happens to differ, previously undocumented.
+  (Final-review finding, 2026-08-20.)

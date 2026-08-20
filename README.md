@@ -158,8 +158,9 @@ See `docs/guide/index.md` for the full breakdown.
 ## Status
 
 Ported from glimmer-uikit v0.1.0 (2026-08-20 arc) — see `NOTICE.md` for the
-full verbatim/adapted/new breakdown, including four defects fixed during the
-port and five AppKit behaviors measured rather than assumed.
+full verbatim/adapted/new breakdown, including the defects fixed during the
+port (carried from upstream, plus one the port's own new code introduced)
+and the AppKit behaviors measured rather than assumed.
 
 **Known limitation — GTK4 is required.** glitter's `deps.edn` declares GTK4 and
 GLib under `:jolt/native`, and jolt inherits a dependency's natives transitively

@@ -13,8 +13,14 @@
   the closure used to close over (the row index, the new entry text) —
   dispatched through glitter.nexus.
 
-  This file is identical to glitter's own todo.clj apart from its two requires,
-  which is the whole point of the renderer seam.
+  This file mirrors glitter's own todo.clj's view shape and state model —
+  same tags (both already use :vbox/:hbox rather than bare :box, so this
+  file doesn't hit the box-orientation divergence documented in NOTICE.md's
+  Known gaps), same actions, same nexus dispatch. It is NOT a byte-for-byte
+  port apart from requires, though: the docstrings, inline comments, and
+  prop-map formatting differ throughout (a ~150-line diff) — only the
+  renderer-facing shape (view, state, actions) is what the seam guarantees
+  stays unchanged.
 
   Run: jolt -M:todo. Needs a GUI session; close the window to exit."
   (:require [clojure.tools.logging :as log]

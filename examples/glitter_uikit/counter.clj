@@ -7,9 +7,14 @@
   function of it; and click handlers are DATA (:on {:click [[:action/dec]]})
   dispatched through a single global handler, never closures.
 
-  This file is deliberately identical to glitter's examples/glitter/counter.clj
-  apart from its two requires — the same view function renders through GTK4 or
-  AppKit with no change."
+  This file mirrors glitter's examples/glitter/counter.clj's view shape
+  and state model exactly — same actions, same dispatch — but is NOT
+  byte-identical apart from requires: it uses :vbox/:hbox where glitter's
+  original uses bare :box for both. That is not stylistic — a bare [:box …]
+  defaults to VERTICAL under glitter.gtk but HORIZONTAL here (NSStackView's
+  own default), so porting glitter's :box literally would render this
+  counter rotated 90°. See NOTICE.md's Known gaps for the measured default
+  and why it is left undeviated rather than matched to glitter.gtk's."
   (:require [glitter-uikit.app :as app]
             [glitter-uikit.appkit :as appkit]
             [glitter.core :as core]))

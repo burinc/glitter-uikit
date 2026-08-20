@@ -47,6 +47,9 @@
      :title "replace-child smoke" :width 260 :height 140 :auto-quit-ms 700)
     (println :before @before)
     (println :after @after)
+    (when (not= ["first" "anchor"] @before)
+      (println :FAIL "expected initial [first anchor], got" @before)
+      (System/exit 1))
     (when (not= ["second" "anchor"] @after)
       (println :FAIL "expected [second anchor], got" @after
                "— a trailing 'second' means replace-child appended instead of"

@@ -39,6 +39,13 @@
 
 (defn -main [& _]
   (let [failures (atom [])
+        ;; Whether the scheduled callback below ever actually ran. Every
+        ;; other assertion lives INSIDE that callback, so if the
+        ;; CFRunLoopSource never drains it (a regression in the scheduler
+        ;; itself), `failures` stays empty and this smoke would print :PASS
+        ;; vacuously — exactly the failure mode it exists to catch. Checked
+        ;; after app/run returns, so it can't be skipped by an early quit.
+        ran? (atom false)
         record! (fn [ok? label] (when-not ok? (swap! failures conj label)))]
     (app/run
      (fn [window]
@@ -54,12 +61,14 @@
          ;; runs the render has happened.
          (app/schedule!
           (fn []
+            (reset! ran? true)
             (record! (not= main-t @worker-t) "worker-really-was-another-thread")
             (record! (= main-t @render-thread) "view-rendered-on-the-main-thread")
             (record! (= ["from-worker"]
                         (mapv u/control-string (w/stack-children (root-stack window))))
                      "label-updated")))))
      :title "main-thread smoke" :width 260 :height 140 :auto-quit-ms 1200)
+    (record! @ran? "schedule!-callback-ran")
     (println :failures @failures)
     (when (seq @failures) (println :FAIL @failures) (System/exit 1))
     (println :PASS)))
