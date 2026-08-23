@@ -9,34 +9,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      # Checked out to a NAMED, workspace-relative path (not the default
-      # $GITHUB_WORKSPACE root) so the sibling glitter checkout below can
-      # land at another workspace-relative path and the two form the exact
-      # "sibling directories" shape deps.edn's :local/root "../glitter"
-      # expects. actions/checkout resolves `path` relative to
-      # $GITHUB_WORKSPACE and REJECTS anything that resolves outside it
-      # (verified against actions/checkout's own input-helper.ts: it
-      # throws "Repository path '<path>' is not under '<workspace>'") — so
-      # `path: ../glitter` for the second checkout, sibling to a root
-      # checkout of this repo, is not an option here.
       - uses: actions/checkout@v4
-        with:
-          path: glitter-uikit
-      - name: Check out glitter (this repo depends on it via :local/root)
-        # KNOWN GAP, not verified: the default GITHUB_TOKEN this job gets is
-        # scoped to THIS repository only, not to burinc/glitter. If
-        # burinc/glitter is private, this checkout needs an explicit PAT —
-        # add `token: ${{ secrets.SOME_PAT }}` with a token that can read it.
-        # No GitHub Actions run has been performed for this project (the user
-        # has no Actions credit budget, so this workflow is manual-trigger-
-        # only — see the `on:` comment above), so this has NOT been verified
-        # on a real runner. The first manual run may fail at this exact step;
-        # that is a disclosed gap, not a surprise, and not fixed here with a
-        # guessed secret name.
-        uses: actions/checkout@v4
-        with:
-          repository: burinc/glitter
-          path: glitter
       - name: Install jolt
         run: |
           set -euo pipefail
@@ -49,8 +22,14 @@ jobs:
         # Not because anything here calls GTK — this renderer is AppKit only.
         # glitter declares GTK4 under :jolt/native and jolt inherits a
         # dependency's natives transitively, hard-failing in load-natives!
-        # before any namespace loads. See README's Status section.
+        # before any namespace loads. See README's Requirements section.
         run: sudo apt-get install -y libgtk-4-1
       - name: Test
-        working-directory: glitter-uikit
+        # deps.edn pins glitter via :git/url + :git/sha (io.github.burinc/glitter)
+        # rather than :local/root, so jolt clones it itself during dependency
+        # resolution — no sibling checkout of burinc/glitter needed here.
+        # Verified against jolt.deps (jolt-core/jolt/deps.clj): git coordinates
+        # are fetched with a plain `git clone` over HTTPS into jolt's own
+        # gitlibs cache; ubuntu-latest ships git and has outbound network
+        # access, so no extra setup is required for that fetch to succeed.
         run: JOLT_PWD="$PWD" jolt -M:test

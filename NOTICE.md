@@ -149,6 +149,25 @@ glitter-uikit; listed for provenance.
 rename-only adaptations of glitter-gl's copies, which in turn credit glitter and
 b12n-rljlt — see glitter-gl's own NOTICE.md.
 
+## Dependency form (changed at release)
+
+`deps.edn`'s `glitter` coordinate changed from `:local/root "../glitter"` to a
+pinned `io.github.burinc/glitter {:git/url … :git/sha …}` for the open-source
+release-readiness pass (2026-08-23). `:local/root` only resolves on a machine
+with a sibling `../glitter` checkout at that exact relative path — i.e. this
+machine — so nobody outside it could build the project at all. A pinned git
+coordinate is fetchable by anyone, since glitter itself is now public; jolt
+clones it during dependency resolution — verified live: `jolt -M:test` and
+all eight live smokes pass resolving glitter via a fresh `git clone` of the
+pinned sha into jolt's own gitlibs cache
+(`~/.jolt/gitlibs/https___github.com_burinc_glitter/<sha>`), confirmed by
+inspecting that directory after the run; the pre-existing sibling
+`../glitter` checkout on this machine was not consulted for that resolution.
+A `:dev` alias (`{:override-deps {io.github.burinc/glitter
+{:local/root "../glitter"}}}`) restores the sibling-checkout resolution for
+the co-development loop — combine it with any runnable alias, e.g.
+`jolt -M:dev:test`. See README.md's "Dependency modes" section.
+
 ## Known gaps
 
 - **GTK4 must be installed to run anything here**, inherited transitively from
@@ -208,17 +227,19 @@ b12n-rljlt — see glitter-gl's own NOTICE.md.
 - **The CI workflow has never been executed.** `.github/workflows/tests.yml`
   is `on: [workflow_dispatch]` only — deliberately, since the project owner
   has no GitHub Actions credit budget and nothing should run automatically.
-  Its correctness rests on reading alone, not on a completed run. The
-  workflow's second checkout step fetches `burinc/glitter` as a sibling
-  directory (needed for `deps.edn`'s `:local/root "../glitter"`) using the
-  job's default `GITHUB_TOKEN`, which GitHub scopes to the triggering
-  repository only — if `burinc/glitter` is private, that step has no
-  credentials to succeed with, and the first manual run may fail there.
-  Nothing downstream (installing jolt, installing GTK4, `jolt -M:test`
-  itself) has run in that environment either, since the workflow would
-  never reach it if the checkout fails. Previously disclosed only in a
-  comment on that checkout step in the workflow file, not recorded here.
-  (Docs pass, 2026-08-21.)
+  Its correctness rests on reading alone, not on a completed run.
+  **Update (release-readiness pass, 2026-08-23):** the workflow previously
+  carried a second checkout step fetching `burinc/glitter` as a sibling
+  directory for `deps.edn`'s old `:local/root "../glitter"`, with a disclosed
+  gap that the job's default `GITHUB_TOKEN` (scoped to this repository only)
+  would have no credentials to check out `burinc/glitter` if it were private.
+  Both are now moot: `glitter` is public, and the dependency-form change
+  above means the workflow no longer checks it out at all — jolt clones it
+  itself, by `:git/url`+`:git/sha`, during `jolt -M:test`'s own dependency
+  resolution. The second checkout step and its PAT caveat were removed
+  accordingly. This does not close the "never executed" gap itself — the
+  workflow's correctness, including this simplification, still rests on
+  reading alone.
 - **The thunk-queue drain fix has no adversarial-concurrency test.**
   `glitter-uikit.app`'s scheduler drains its posted-work queue with the
   atomic `swap-vals!` fix described above, replacing the non-atomic
