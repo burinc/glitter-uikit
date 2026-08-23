@@ -16,11 +16,36 @@
  ;; :aliases-scoped :jolt/native is silently ignored, so there is no way to
  ;; scope it away. The real fix is extracting a natives-free glitter-core the
  ;; way upstream glimmer did at v0.1.0 — see README.md's Status section.
- :deps {burinc/glitter {:local/root "../glitter"}}
+ ;;
+ ;; Dependency form: a pinned git coordinate, not :local/root — glitter is
+ ;; public, so jolt can `git clone` it itself; :local/root only resolves on a
+ ;; machine with a sibling ../glitter checkout, which is nobody outside this
+ ;; machine. Verified against jolt's own source, not inferred from JVM
+ ;; tools.deps: jolt.deps's ns docstring (jolt-core/jolt/deps.clj:1-12) lists
+ ;; :git/url + :git/sha and :override-deps among what this reduced tools.deps
+ ;; supports, :override-deps is implemented at deps.clj:917-935 and exercised
+ ;; by test/deps_expand_test.clj:112, and the same docstring notes the deps
+ ;; walk is breadth-first so a top-level coordinate wins over the transitive
+ ;; one it's overriding. That's what makes the :dev alias below predictable:
+ ;; it re-adds :local/root "../glitter" as a TOP-LEVEL :override-deps entry,
+ ;; so `jolt -M:dev:test` resolves against a sibling checkout for the
+ ;; co-development loop, while every other invocation (including CI and
+ ;; anyone else's first build) resolves the pin below.
+ :deps {io.github.burinc/glitter
+        {:git/url "https://github.com/burinc/glitter"
+         :git/sha "33713d607d11cc1fbf8cda237c0b6f251ac43388"}}
 
  ;; Each runnable has its own alias with :main-opts (jolt's -M:alias form needs
  ;; main-opts). Tasks are thin wrappers so you can run `jolt counter`, etc.
- :aliases {:test    {:extra-paths ["test" "examples"]
+ :aliases {;; Co-development loop only: overrides the pinned glitter dep back
+           ;; to a sibling checkout. Combine with any runnable alias, e.g.
+           ;; `jolt -M:dev:test` or `jolt -M:dev:counter`. Requires a
+           ;; `../glitter` checkout next to this one; nobody outside this
+           ;; machine needs it or has it.
+           :dev {:override-deps
+                 {io.github.burinc/glitter {:local/root "../glitter"}}}
+
+           :test    {:extra-paths ["test" "examples"]
                      :main-opts ["-m" "glitter-uikit.test-runner"]}
            :smoke   {:extra-paths ["examples"] :main-opts ["-m" "glitter-uikit.smoke"]}
            :counter {:extra-paths ["examples"] :main-opts ["-m" "glitter-uikit.counter"]}
