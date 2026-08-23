@@ -9,6 +9,33 @@ Reagent-style sibling). A data-driven registry maps hiccup tags to AppKit
 views, and glitter's reconciler drives prop/event wiring through the
 `IRender`/`IMemory` protocols.
 
+## Requirements
+
+**macOS 10.13+** with **Xcode Command Line Tools** (provides `clang`,
+`ld`, and frameworks).
+
+**GTK4 is required** — this is a known limitation inherited from
+glitter, and it is real: this renderer never calls a single GTK function,
+but jolt inherits a dependency's `:jolt/native` declarations transitively
+and hard-fails in `load-natives!` before any namespace loads when one is
+missing. glitter's own `deps.edn` declares GTK4 and GLib under
+`:jolt/native`, so a glitter-uikit app needs GTK4 installed anyway.
+
+Install GTK4 via Homebrew:
+
+```sh
+brew install gtk4 glib
+```
+
+The limitation cannot be scoped away from this side — verified live that an
+`:aliases`-scoped `:jolt/native` is silently ignored. The tracked fix is to
+extract a natives-free `glitter-core` — the toolkit-agnostic half of
+glitter (`core`, `protocols`, `hiccup`, `vdom`, `alias`, `assert`,
+`asserts`, `errors`, `console-logger`, `env`, `nexus/*`) — the same split
+[upstream glimmer made at its own v0.1.0](https://github.com/jolt-lang/glimmer/tree/v0.1.0),
+with glitter (GTK4) and glitter-uikit (AppKit) both depending on it. See
+the Status section below for where that stands.
+
 ## Quick start
 
 ```clojure
@@ -48,32 +75,6 @@ Run via `jolt -M:counter`.
 [glitter's own README](https://github.com/burinc/glitter#quick-start)
 documents (verified against jolt v0.6.3).
 
-## Requirements
-
-**macOS 10.13+** with **Xcode Command Line Tools** (provides `clang`,
-`ld`, and frameworks).
-
-**GTK4 is required** — this is a known limitation inherited from
-glitter. glitter's own `deps.edn` declares GTK4 and GLib under
-`:jolt/native`, and jolt inherits a dependency's natives transitively and
-hard-fails in `load-natives!` before any namespace loads when one is
-missing. So a glitter-uikit app needs GTK4 installed even though it renders
-through AppKit and never calls a GTK function.
-
-Install GTK4 via Homebrew:
-
-```sh
-brew install gtk4 glib
-```
-
-The limitation cannot be scoped away from this side — verified live that an
-`:aliases`-scoped `:jolt/native` is silently ignored. The real fix is to
-extract a natives-free `glitter-core` — the toolkit-agnostic half of
-glitter (`core`, `protocols`, `hiccup`, `vdom`, `alias`, `assert`,
-`asserts`, `errors`, `console-logger`, `env`, `nexus/*`) — the same split
-[upstream glimmer made at its own v0.1.0](https://github.com/jolt-lang/glimmer/tree/v0.1.0),
-with glitter (GTK4) and glitter-uikit (AppKit) both depending on it.
-
 ## Running
 
 ```sh
@@ -105,6 +106,30 @@ bb main-thread-smoke    # off-thread state changes
 bb reactivity-smoke     # live state-atom reactivity
 bb repl-live-smoke      # nREPL live editing
 ```
+
+## Dependency modes
+
+`deps.edn` declares glitter as a pinned git coordinate
+(`io.github.burinc/glitter` at a fixed `:git/sha`). jolt fetches and
+builds against that exact commit, so a fresh clone of this repo builds
+with no other setup — nothing needs to sit next to it on disk. This is
+the default, and what CI and every command in Quick start/Running above
+uses unless you say otherwise:
+
+```sh
+jolt -M:counter          # builds against the pinned glitter sha
+```
+
+For co-developing this renderer against an unreleased glitter change, a
+`:dev` alias overrides the pin back to a sibling checkout at `../glitter`.
+Combine it with any runnable alias:
+
+```sh
+jolt -M:dev:counter      # builds against ../glitter instead of the pin
+```
+
+`:dev` only helps if `../glitter` actually exists next to this checkout
+— it is not something a first-time user needs or has.
 
 ## Hiccup reference
 
