@@ -1,0 +1,49 @@
+;; screen-grab manifest for glitter-uikit's interactive demos.
+;; https://github.com/burinc/b12n-screen-grab
+;;
+;; Driver is :spawn — each demo is launched fresh via `jolt -M:<id>`, captured,
+;; and torn down. Both demos are interactive and deliberately carry no
+;; :auto-quit-ms, so :spawn's own teardown is what ends them.
+;;
+;; STILLS, not GIFs, deliberately. glitter's sibling manifest steers its demos
+;; with Tab/Space, but that recipe is verified against GTK and does NOT
+;; obviously carry to AppKit: on macOS, Tab moves focus between text fields and
+;; lists, and reaching a BUTTON requires "Full Keyboard Access" to be enabled in
+;; System Settings. Rather than assume glitter's timeline transfers — the same
+;; assumption that produced a real threading defect elsewhere in this port —
+;; stills are captured first, which need no synthetic input at all. Upgrading to
+;; GIFs is a deliberate follow-up that starts by probing what steering actually
+;; reaches an AppKit window.
+{:driver  :spawn
+ ;; `shot` accepts #{:simctl :cgevent-png :screencapture}; :cgevent-gif is
+ ;; record-only. cgevent-png keeps capture on the same toolchain as the rest.
+ :capture :cgevent-png
+
+ ;; Two items, and no existing registry worth wiring — inline rather than
+ ;; :examples-cmd, per screen-grab's own guidance for a handful of items.
+ :examples
+ [{:id    "counter"
+   :group "basics"
+   :run   "jolt -M:counter"
+   :src   "examples/glitter_uikit/counter.clj"
+   :desc  "The canonical demo. One state atom, a pure state -> hiccup view, handlers as data."}
+  {:id    "todo"
+   :group "basics"
+   :run   "jolt -M:todo"
+   :src   "examples/glitter_uikit/todo.clj"
+   :desc  "A task board on glitter.nexus: derived counts computed inline, an entry, and checkbutton toggles."}]
+
+ :out-dir "docs/demos"
+ :ledger  "docs/demos/ledger.edn"
+ :readme  "docs/demos/README.md"
+ :title   "Demos"
+ :preamble "Screenshots of glitter-uikit's interactive demos, rendered through AppKit. Regenerate with `screen-grab shot --manifest scripts/demo_manifest.edn` (needs macOS Screen Recording permission). The images here are committed, so you do not need the capture tool to browse them."
+
+ :groups [{:key "basics" :title "basics"}]
+
+ ;; Windows are sized by the demos themselves (counter 320x160, todo 480x420),
+ ;; so :width here is the captured image width, not the window's.
+ :defaults {:width 520 :warmup 12}
+
+ :overrides
+ {"todo" {:width 620}}}

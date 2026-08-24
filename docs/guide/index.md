@@ -60,6 +60,9 @@ against the previous vdom and issues the minimal set of `IRender`/
 ## Pages
 
 ### Orientation
+- [`examples.md`](examples.md) — the two interactive demos (`counter`,
+  `todo`), what each one demonstrates about the model, and why their
+  screenshots are stills rather than animations for now.
 - [`architecture.md`](architecture.md) — why `glitter-uikit` is a whole
   alternative renderer rather than a registered widget, the single
   `reify` implementing both `IRender` and `IMemory` (and the
