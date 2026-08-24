@@ -9,6 +9,12 @@ Reagent-style sibling). A data-driven registry maps hiccup tags to AppKit
 views, and glitter's reconciler drives prop/event wiring through the
 `IRender`/`IMemory` protocols.
 
+[<img src="docs/demos/counter.png" width="480">](docs/guide/examples.md)
+
+*The counter demo, running as a real AppKit window. More screenshots
+(and what each one demonstrates about the model) in the
+[examples gallery](docs/guide/examples.md).*
+
 ## Requirements
 
 **macOS 10.13+** with **Xcode Command Line Tools** (provides `clang`,
