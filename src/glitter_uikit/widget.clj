@@ -301,7 +301,17 @@
    [:pointer :pointer :pointer] :void :collect-safe))
 
 (defonce ^:private terminate-cb
-  (ffi/foreign-callable (fn [_ _ _] 1) [:pointer :pointer :pointer] :char :collect-safe))
+  ;; Returns (char 1), NOT the integer 1. jolt's :char is a Scheme CHARACTER —
+  ;; the same fact ffi.clj records for BOOL ARGUMENTS, which is why those are
+  ;; declared :int. The rule applies to a callable's RETURN too, and this is the
+  ;; only foreign-callable here with a non-:void return, so it is the only place
+  ;; it bites: `(char? 1)` is false, so returning the int raised
+  ;; "Exception in foreign-callable: invalid return value 1" and crashed the app
+  ;; whenever a human closed the window (issue #1).
+  ;;
+  ;; The declared :char must stay: the method is registered with ObjC type
+  ;; encoding "c@:@", where c is BOOL/char. Declaring :int would mismatch the ABI.
+  (ffi/foreign-callable (fn [_ _ _] (char 1)) [:pointer :pointer :pointer] :char :collect-safe))
 
 (defonce invoker
   (let [existing (u/objc-get-class "GlitterTarget")]
