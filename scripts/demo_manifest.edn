@@ -22,7 +22,15 @@
  ;; Two items, and no existing registry worth wiring — inline rather than
  ;; :examples-cmd, per screen-grab's own guidance for a handful of items.
  :examples
- [{:id    "counter"
+ [;; HAND-STEERED, not reproducible by this manifest. Synthetic input does not
+  ;; reach an AppKit window here — probed 2026-08-25: five Tab/Space presses left
+  ;; Count at 0 with no focus ring, and :type left a focused NSTextField showing
+  ;; only its placeholder. screen-grab's own README rules out :click/:move/:drag
+  ;; for any app. glitter's GTK demos DO steer via Tab/Space, so this is a real
+  ;; toolkit difference, not a broken setup: on macOS, keyboard focus reaches a
+  ;; button only with "Full Keyboard Access" enabled.
+  ;; The committed counter.png therefore shows Count: 5 from a human's clicks.
+  {:id    "counter"
    :group "basics"
    :run   "jolt -M:counter"
    :src   "examples/glitter_uikit/counter.clj"
@@ -37,7 +45,7 @@
  :ledger  "docs/demos/ledger.edn"
  :readme  "docs/demos/README.md"
  :title   "Demos"
- :preamble "Screenshots of glitter-uikit's interactive demos, rendered through AppKit. Regenerate with `screen-grab shot --manifest scripts/demo_manifest.edn` (needs macOS Screen Recording permission). The images here are committed, so you do not need the capture tool to browse them."
+ :preamble "Screenshots of glitter-uikit's interactive demos, rendered through AppKit. The images here are committed, so you do not need the capture tool to browse them.\n\n`todo.png` is a plain `screen-grab shot` of the demo's initial state and regenerates faithfully. **`counter.png` was steered by hand** \u2014 a person clicked `+ 1` five times and focused the window before the frame was taken \u2014 because synthetic input does not reach an AppKit window here. A normal re-run leaves it alone: the ledger hashes each item's `:src`, so an unchanged `counter.clj` reports `up to date` (verified). But `--force`, or any edit to `counter.clj`, WILL recapture it and silently replace the steered frame with an initial-state one reading `Count: 0`. If that happens, re-steer it by hand rather than committing the regression."
 
  :groups [{:key "basics" :title "basics"}]
 
