@@ -1,4 +1,5 @@
 {
   "counter" {:sha "f8f0557bd349b7e7fe9ac686f9e5585f6b05bd7b32717676363679505ca4beef", :settings ["png"], :bytes 23471, :at "2026-08-24T22:15:32.684872Z"}
   "todo" {:sha "bec7de8fa1e591be3a9ca8ad82fc7d6d13d2286bea782d0be00eff92bca95d8d", :settings ["png"], :bytes 64348, :at "2026-08-24T22:15:32.684921Z"}
+  "widgets" {:sha "89f0ae94df055cd56411f0dd0b5be57912bf1c3b903a7819f9366f19145aa3b1", :settings ["png"], :bytes 84982, :at "2026-08-25T09:07:00.920531Z"}
 }

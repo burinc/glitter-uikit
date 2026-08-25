@@ -35,6 +35,14 @@
    :run   "jolt -M:counter"
    :src   "examples/glitter_uikit/counter.clj"
    :desc  "The canonical demo. One state atom, a pure state -> hiccup view, handlers as data."}
+  ;; Fully reproducible, unlike counter: this demo's INITIAL render is already
+  ;; the interesting one (six seeded list items), so no steering is needed.
+  {:id    "widgets"
+   :group "basics"
+   :run   "jolt -M:widgets"
+   :src   "examples/glitter_uikit/widgets.clj"
+   :description "Every widget tag the renderer registers, in one window — including :separator and :scrolled, which no other example uses."}
+
   {:id    "todo"
    :group "basics"
    :run   "jolt -M:todo"

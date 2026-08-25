@@ -100,6 +100,7 @@ Full topic breakdown: `docs/guide/index.md`.
 | `src/glitter_uikit/appkit.clj` | `IRender` protocol (create/update/remove/insert-before); `IMemory` protocol (ref management); glitter.core integration |
 | `src/glitter_uikit/app.clj` | `NSApplication` event loop and cross-thread marshalling; `run` builds a window and calls the caller's `on-activate` to mount into it (mounting itself is `glitter-uikit.appkit/mount!`, not this namespace). No `-main` here — see the `examples/*` entries below for that |
 | `examples/glitter_uikit/counter.clj` | Counter demo — state atom + view function + action dispatch |
+| `examples/glitter_uikit/widgets.clj` | Widget-gallery demo — every registered tag in one window; the only example that uses `:separator` or `:scrolled` |
 | `examples/glitter_uikit/todo.clj` | Task-board demo — derived counts, entry/checkbox list |
 | `examples/glitter_uikit/smoke.clj` | Basic smoke: mount a tree and run the loop without exception |
 | `examples/glitter_uikit/keyed_smoke.clj` | Keyed reorder — verifies live AppKit widget order via `glitter-uikit.widget/stack-children` (reads `arrangedSubviews`, not GTK4's `-firstChild`/`-nextSibling`) |
@@ -204,7 +205,8 @@ The full AppKit renderer for glitter: nine widget tags (`:window`,
 `NSBox`, `NSScrollView`). Eight live-AppKit smokes (keyed reorder, child
 replacement/insertion, handler lifecycle, main-thread rendering,
 state-atom reactivity, nREPL live editing, plus the basic smoke) plus the
-full unit suite. Two interactive demos (counter, task board) mirroring
+full unit suite. Three interactive demos (counter, widget gallery, task
+board) mirroring
 glitter's own examples.
 
 Known v1 limitations, inherited unmodified from glimmer-uikit: `:class`

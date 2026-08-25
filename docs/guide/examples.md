@@ -1,9 +1,9 @@
 # The examples
 
-`examples/glitter_uikit/` holds **ten runnable namespaces**, and every one
+`examples/glitter_uikit/` holds **eleven runnable namespaces**, and every one
 has a `deps.edn` alias and a `bb` task. They come in two kinds:
 
-- **Two interactive demos** you open and click — the gallery below.
+- **Three interactive demos** you open and click — the gallery below.
 - **Eight live-AppKit smokes**, each a small, complete glitter program that
   mounts a real window, asserts against real AppKit state, and exits
   non-zero on failure.
@@ -20,6 +20,7 @@ never calls a GTK function. See [Limitations](limitations.md) for why.
 | preview | `bb` name | What it demonstrates |
 |---|---|---|
 | [<img src="../demos/counter.png" width="150">](../demos/counter.png) | `counter` | The canonical demo. One state atom, a pure `state -> hiccup` view, handlers as data. The whole model in a window you can click through in ten seconds. |
+| [<img src="../demos/widgets.png" width="150">](../demos/widgets.png) | `widgets` | Every tag the renderer registers, in one window — `:vbox`/`:hbox`, `:label`, `:separator`, `:frame`, `:entry`, `:checkbutton`, `:button` (including a `:sensitive false` one) and a `:scrolled` list. `:separator` and `:scrolled` appear in no other example, so this is the only place either is shown running. Type a name and press Add, or tick the checkbutton first to add it in capitals. |
 | [<img src="../demos/todo.png" width="150">](../demos/todo.png) | `todo` | A task board on `glitter.nexus`: derived counts (3 total / 1 done / 2 left) computed inline on every re-render — glitter has no reactive-derivation primitive — plus an entry with `:change`/`:activate`, checkbutton toggles, and list rendering in a frame. The counts row is the whole point: it's recomputed from `:tasks` on every render, not tracked as separate state. |
 
 Every preview is a real screenshot of the demo running, not a mockup. They

@@ -12,6 +12,10 @@ The canonical demo. One state atom, a pure state -> hiccup view, handlers as dat
 
 ![counter](counter.png)
 
+### widgets
+
+![widgets](widgets.png)
+
 ### todo
 
 A task board on glitter.nexus: derived counts computed inline, an entry, and checkbutton toggles.
