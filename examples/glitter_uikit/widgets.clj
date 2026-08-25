@@ -96,9 +96,15 @@
    [:scrolled {:vexpand true}
     [:vbox {:spacing 4
             :margin 8}
+     ;; ONE hiccup vector, not [[...]]. A seq (from map/for) is spliced into the
+     ;; children; a VECTOR is read as a single element, so [[:label …]] puts a
+     ;; vector in tag position. glitter.hiccup's hiccup? check then rejects it
+     ;; and renders it as a stringified literal instead of throwing — the exact
+     ;; silent bug class AGENTS.md convention #1 describes. It showed up as the
+     ;; raw "[[:label {:markup ...}]]" text on screen after Clear list.
      (if (empty? items)
-       [[:label {:markup "<span color='#888888'>List is empty — add one above.</span>"
-                 :halign :start}]]
+       [:label {:markup "<span color='#888888'>List is empty — add one above.</span>"
+                :halign :start}]
        (map item-row items))]]])
 
 (defn- add-draft [{:keys [draft loud?]
@@ -121,7 +127,8 @@
         :action/draft (swap! state assoc :draft value)
         :action/loud  (swap! state assoc :loud? (boolean value))
         :action/add   (swap! state add-draft)
-        :action/clear (swap! state assoc :items [])
+        :action/clear (swap! state assoc :items ["first item" "second item" "third item"
+                                                 "fourth item" "fifth item" "sixth item"])
         nil))))
 
 (core/set-dispatch! execute-actions)

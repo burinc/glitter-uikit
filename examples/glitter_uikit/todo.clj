@@ -85,9 +85,16 @@
               :vexpand true}
       [:vbox {:spacing 6
               :margin 12}
+       ;; ONE hiccup vector, not [[...]]: a seq (from for/map) is spliced into
+       ;; the children, but a VECTOR is read as a single element, so [[:label …]]
+       ;; puts a vector in tag position. glitter.hiccup's hiccup? check rejects
+       ;; that and renders it as a stringified literal rather than throwing —
+       ;; AGENTS.md convention #1. Unreachable here today (nothing removes a
+       ;; task, and three are seeded), but it is the shape widgets.clj copied
+       ;; and then hit for real.
        (if (empty? tasks)
-         [[:label {:markup "<span color='#888888'>Nothing here yet — add a task below.</span>"
-                   :halign :start}]]
+         [:label {:markup "<span color='#888888'>Nothing here yet — add a task below.</span>"
+                  :halign :start}]
          (for [[idx t] (map-indexed vector tasks)]
            (task-row idx t)))]]
 
