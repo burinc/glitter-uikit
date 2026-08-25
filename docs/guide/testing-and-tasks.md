@@ -90,15 +90,16 @@ landed."*
 
 ## Interactive demos
 
-`jolt counter`, `jolt widgets` and `jolt todo` are the three demos meant
-to be run and clicked, not asserted on — `counter.clj` is the canonical
+`jolt counter`, `jolt widgets`, `jolt temperature` and `jolt todo` are the
+four demos meant to be run and clicked, not asserted on — `counter.clj` is the canonical
 Replicant-style counter (data-driven `:on {:click [[:action/dec]]}`
 dispatch, all state in one top-level atom), and `todo.clj` is a larger
 task-board demo built on `glitter.nexus` (action-expansions, an
 `:entry`'s `:change`/`:activate` pair, checkbutton toggles inside a
 `:frame`), while `widgets.clj` is the visual index of the widget layer —
-the only example that exercises `:separator` and `:scrolled`. All three
-block on their window until closed, which is exactly why
+the only example that exercises `:separator` and `:scrolled`, and
+`temperature.clj` is the 7GUIs Temperature Converter ported from glitter.
+All four block on their window until closed, which is exactly why
 `bb smokes` (below) excludes them — an aggregate task that includes an
 interactive demo would hang forever waiting for a window close that
 never comes in an automated context.

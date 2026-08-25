@@ -22,3 +22,9 @@ A task board on glitter.nexus: derived counts computed inline, an entry, and che
 
 ![todo](todo.png)
 
+## Other
+
+### temperature
+
+![temperature](temperature.png)
+

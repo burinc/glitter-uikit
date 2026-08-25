@@ -6,6 +6,7 @@
 ;;   bb counter                interactive demo: a counter window
 ;;   bb todo                    interactive demo: a todo list (glitter.nexus)
 ;;   bb widgets                 interactive demo: every widget tag in one window
+;;   bb temperature             interactive demo: 7GUIs Temperature Converter
 ;;   bb reactivity-smoke        live smoke: state-atom watch triggers reconcile
 ;;   bb replace-child-smoke     live smoke: :replace-child! child swap
 ;;   bb insert-before-smoke     live smoke: insert-before ordering
@@ -48,6 +49,7 @@
           (row "counter" "interactive demo: a counter window")
           (row "todo" "interactive demo: a todo list (glitter.nexus)")
           (row "widgets" "interactive demo: every widget tag in one window")
+          (row "temperature" "interactive demo: 7GUIs Temperature Converter")
           (hdr "Smoke (live AppKit, exits non-zero on failure)")
           (row "smoke" "end-to-end seam proof: mount, reconcile, quit")
           (row "reactivity-smoke" "state-atom watch triggers reconcile")
@@ -92,6 +94,9 @@
 
   widgets {:doc "Interactive demo: every widget tag the renderer registers, in one window"
            :task (shell "jolt" "-M:widgets")}
+
+  temperature {:doc "Interactive demo: the 7GUIs Temperature Converter"
+               :task (shell "jolt" "-M:temperature")}
 
   reactivity-smoke {:doc "Live-AppKit smoke: state-atom watch triggers reconcile"
                     :task (shell "jolt" "-M:reactivity-smoke")}

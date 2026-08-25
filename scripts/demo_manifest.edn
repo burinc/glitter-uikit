@@ -43,6 +43,14 @@
    :src   "examples/glitter_uikit/widgets.clj"
    :description "Every widget tag the renderer registers, in one window — including :separator and :scrolled, which no other example uses."}
 
+  ;; Also fully reproducible: the initial 0 C / 32 F render already shows both
+  ;; linked fields, so no steering is needed to get a meaningful frame.
+  {:id    "temperature"
+   :group "7guis"
+   :run   "jolt -M:temperature"
+   :src   "examples/glitter_uikit/temperature.clj"
+   :description "The 7GUIs Temperature Converter — two linked numeric fields, ported from glitter with its domain logic unchanged."}
+
   {:id    "todo"
    :group "basics"
    :run   "jolt -M:todo"

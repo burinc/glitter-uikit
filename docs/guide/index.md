@@ -60,8 +60,9 @@ against the previous vdom and issues the minimal set of `IRender`/
 ## Pages
 
 ### Orientation
-- [`examples.md`](examples.md) — the catalogue of all eleven runnable
-  namespaces: the three interactive demos (`counter`, `widgets`, `todo`) with
+- [`examples.md`](examples.md) — the catalogue of all twelve runnable
+  namespaces: the four interactive demos (`counter`, `widgets`,
+  `temperature`, `todo`) with
   screenshots and what each shows about the model, plus an index of the
   eight live-AppKit smokes and the one property each one pins. Also why
   the screenshots are stills rather than animations for now.
