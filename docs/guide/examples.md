@@ -140,6 +140,13 @@ are the index; that page is the argument.
 
 ## How the recordings are made
 
+> **The capture tooling is maintainer-only.** Everything below describes how
+> the images in this repo were made, and both tools it names — `screen-grab`
+> and `cgevent` — are **not public yet**. You do not need either of them: every
+> screenshot and GIF is committed, so the gallery works from a plain clone. This
+> section is here so the provenance of each image is on the record, and so the
+> recipe is written down for whoever regenerates them.
+
 Every preview above is a real recording of the demo being driven. They are
 produced by `scripts/record_gifs.sh`, which drives each demo through `cgevent`'s
 **accessibility API**: `:tap-by-role` sends `AXPress` to a real control, and once
@@ -202,3 +209,7 @@ If the new example is a screenshot-worthy interactive demo, add it to
 `screen-grab shot --manifest scripts/demo_manifest.edn`. If it animates on its
 own, without needing input, it can go in `scripts/demo_gifs.edn` instead and be
 recorded with `screen-grab record`.
+
+Both of those need the maintainer-only tooling above. A contribution that adds
+an example is entirely welcome **without** an image — say so in the PR and it
+can be captured on this side.

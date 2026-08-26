@@ -26,6 +26,7 @@
 ;;   bb verify                pre-commit gate: lint (report) + test (must pass)
 ;;   bb check:positional-args | :strict   find fns with 3+ positional args (report | strict)
 ;;   bb hooks:install | hooks:install:full | hooks:uninstall   git pre-commit hook
+;;   bb docs-sync [--no-push]  rebuild the docs site + mirror the guide to b12n-wikis
 ;;   bb nrepl [port]           start a jolt nREPL server (default 7888)
 ;; NOTE: task bodies are EDN-parsed — no #"regex", @deref, or #(...) reader macros.
 ;; NOTE: every jolt task below shells out to `jolt -M:<alias>`, never the deps.edn
@@ -233,6 +234,157 @@
                            (if (fs/exists? hook)
                              (do (fs/delete hook) (println "OK pre-commit hook removed"))
                              (println ">> no pre-commit hook found")))}
+
+  docs-sync
+  {:doc "Republish the docs: rebuild, push the site repo, mirror the guide, deploy to S3 + CloudFront. Maintainer-only: needs private sibling repos and AWS_PROFILE=b12n. bb docs-sync [--no-push]"
+   ;; S3 variant, NOT the GitHub Pages one. glitter-uikit.github.io is private
+   ;; and stays private, and GitHub will not serve Pages from a private repo on
+   ;; a free plan — so the push is only a backup of the built output, and the
+   ;; S3 sync below is what actually publishes glitter-uikit.b12n.app. Enabling
+   ;; Pages is deliberately NOT part of this task.
+   ;;
+   ;; Never force-pushes and never rebases: if a target is behind, it says so
+   ;; and stops. --no-push commits locally and publishes nothing.
+   ;;
+   ;; Do NOT commit docs/CNAME by hand. The b12n-docs engine writes it from
+   ;; :cname in projects/glitter-uikit.edn, and `bb site:build` wipes the output
+   ;; dir first — a hand-placed one survives a single build, then vanishes.
+   :task
+   (let [push?     (not (some (fn [a] (= a "--no-push")) *command-line-args*))
+         home      (System/getProperty "user.home")
+         proj-dir  (System/getProperty "user.dir")
+         docs-repo (str home "/dev/b12n-docs")
+         site-repo (str home "/dev/glitter-uikit.github.io")
+         wiki-repo (str home "/dev/b12n-wikis")
+         wiki-dir  (str wiki-repo "/glitter-uikit")
+         bucket    "b12n-site-glitter-uikit"
+         site-host "glitter-uikit.b12n.app"
+         hdr       (fn [label] (println (str "\n-- " label " --")))
+         missing   (remove fs/exists? [docs-repo site-repo wiki-repo])
+         dirty?    (fn [dir path]
+                     (let [res (shell {:dir dir :out :string} "git" "status" "--short" "--" path)]
+                       (not (str/blank? (:out res)))))
+         ;; Returns a keyword rather than exiting, so one repo failing does not
+         ;; block the other. add/commit are scoped to `path` — never -A/. —
+         ;; because b12n-wikis is shared across many projects and a stray staged
+         ;; file must not ride along.
+         sync!     (fn [opts]
+                     (let [label (:label opts) dir (:dir opts)
+                           path (:path opts) msg (:msg opts)]
+                       (hdr label)
+                       (let [committed? (if (dirty? dir path)
+                                          (do (shell {:dir dir} "git" "add" "--" path)
+                                              (shell {:dir dir} "git" "commit" "-m" msg "--" path)
+                                              true)
+                                          false)]
+                         (cond
+                           (not push?)
+                           (do (println (if committed?
+                                          "  committed locally (--no-push)"
+                                          "  nothing to commit (--no-push)"))
+                               :ok)
+
+                           :else
+                           (do (shell {:dir dir :continue true} "git" "fetch" "origin")
+                               (let [st (:out (shell {:dir dir :out :string}
+                                                     "git" "status" "--short" "--branch"))]
+                                 (if (str/includes? st "behind")
+                                   (do (println "  SKIPPED — branch is behind origin. Pull and re-run.")
+                                       :behind)
+                                   (do (shell {:dir dir} "git" "push" "origin" "HEAD")
+                                       (println (if committed? "  committed and pushed" "  pushed (already committed)"))
+                                       :ok))))))))
+         ;; Classify a failed head-bucket rather than assuming "no bucket". It
+         ;; fails identically when the CLI cannot reach AWS at all, and on a
+         ;; proxied machine every aws call dies at the proxy while git keeps
+         ;; working. Sending someone to tofu:apply for that would create
+         ;; infrastructure that already exists.
+         deploy!   (fn []
+                     (hdr "deploy to S3 + CloudFront")
+                     (cond
+                       (not push?) (do (println "  skipped (--no-push publishes nothing outward)") :deploy-disabled)
+                       (not (fs/which "aws")) (do (println "  SKIPPED - aws CLI not on PATH.") :aws-missing)
+                       :else
+                       (let [probe (shell {:continue true :out :string :err :string}
+                                          "aws" "s3api" "head-bucket" "--bucket" bucket "--profile" "b12n")]
+                         (if-not (zero? (:exit probe))
+                           (let [err  (str/lower-case (str (:err probe) " " (:out probe)))
+                                 said (first (str/split-lines (str/trim (str (:err probe) (:out probe)))))
+                                 hit? (fn [ss] (some (fn [x] (str/includes? err x)) ss))]
+                             (cond
+                               (hit? ["proxy" "could not connect" "endpoint url" "name resolution"
+                                      "network is unreachable" "timed out" "connection refused"])
+                               (do (println "  SKIPPED - could not reach AWS at all. This is a network")
+                                   (println "  problem on THIS MACHINE, not evidence the bucket is missing.")
+                                   (println (str "    " said))
+                                   :unreachable)
+
+                               (hit? ["unable to locate credentials" "no credentials" "expired"
+                                      "invalidclienttokenid" "sso session"])
+                               (do (println "  SKIPPED - AWS credentials for profile b12n missing or expired.")
+                                   (println (str "    " said))
+                                   :credentials)
+
+                               (hit? ["403" "forbidden" "accessdenied"])
+                               (do (println (str "  SKIPPED - s3://" bucket " EXISTS but profile b12n cannot read it."))
+                                   (println "  A permissions problem, not missing infrastructure.")
+                                   :forbidden)
+
+                               (hit? ["404" "not found" "nosuchbucket"])
+                               (do (println (str "  SKIPPED - s3://" bucket " does not exist."))
+                                   (println "  THIS is the one that needs infrastructure. Run once in the infra repo:")
+                                   (println "    bb render lock tofu:init tofu:plan tofu:apply -- static-site glitter-uikit")
+                                   :missing-bucket)
+
+                               :else
+                               (do (println "  SKIPPED - head-bucket failed for an unrecognized reason.")
+                                   (println (str "    " said))
+                                   :probe-failed)))
+                           (let [sync-res (shell {:continue true} "aws" "s3" "sync"
+                                                 (str site-repo "/docs/") (str "s3://" bucket "/")
+                                                 "--profile" "b12n" "--delete")]
+                             (if-not (zero? (:exit sync-res))
+                               (do (println "  S3 SYNC FAILED") :sync-failed)
+                               (let [q    (str "DistributionList.Items[?contains(Aliases.Items, `" site-host "`)].Id | [0]")
+                                     dist (shell {:continue true :out :string} "aws" "cloudfront"
+                                                 "list-distributions" "--profile" "b12n"
+                                                 "--query" q "--output" "text")
+                                     id   (str/trim (or (:out dist) ""))]
+                                 (if (or (str/blank? id) (= id "None"))
+                                   (do (println (str "  synced, but no CloudFront distribution found for " site-host))
+                                       (println "  (cache not invalidated; the edge may serve stale files for a while)")
+                                       :no-distribution)
+                                   (let [inv (shell {:continue true} "aws" "cloudfront" "create-invalidation"
+                                                    "--profile" "b12n" "--distribution-id" id "--paths" "/*")]
+                                     (if (zero? (:exit inv))
+                                       (do (println (str "  synced + invalidated (" id ") - https://" site-host)) :ok)
+                                       (do (println "  synced, but INVALIDATION FAILED") :invalidation-failed)))))))))))]
+     (if (seq missing)
+       (do (println "Missing sibling repo(s):")
+           (doseq [m missing] (println (str "  " m)))
+           (System/exit 1))
+       (do
+         (hdr "rebuild")
+         (shell {:dir docs-repo} "bb" "site:build" "glitter-uikit")
+
+         (hdr "mirror guide -> b12n-wikis")
+         (fs/create-dirs wiki-dir)
+         (doseq [f (fs/glob (str proj-dir "/docs/guide") "*.md")]
+           (fs/copy f (fs/file wiki-dir (fs/file-name f)) {:replace-existing true}))
+         (println (str "  copied " (count (fs/glob (str proj-dir "/docs/guide") "*.md")) " page(s)"))
+
+         (let [a (sync! {:label "site repo" :dir site-repo :path "docs"
+                         :msg "chore: rebuild docs"})
+               b (sync! {:label "wiki mirror" :dir wiki-repo :path "glitter-uikit"
+                         :msg "glitter-uikit: re-mirror guide pages"})
+               c (deploy!)]
+           (hdr "done")
+           (println (str "  site repo:  " (name a)))
+           (println (str "  wiki:       " (name b)))
+           (println (str "  deploy:     " (name c)))
+           ;; :skipped and :deploy-disabled are fine; anything else is not.
+           (when-not (every? (fn [r] (contains? #{:ok :skipped :deploy-disabled} r)) [a b c])
+             (System/exit 1))))))}
 
   nrepl {:doc "Start a jolt nREPL server for interactive dev: bb nrepl [port] (default 7888)"
          :task (shell "jolt" "nrepl-server" (or (first *command-line-args*) "7888"))}}}

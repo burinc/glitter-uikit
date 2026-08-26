@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Record a GIF per demo, driving each through cgevent's ACCESSIBILITY API.
 #
+# MAINTAINER-ONLY. Both tools this needs — screen-grab and cgevent — are not
+# public yet, so this script will not run for most readers. It is committed
+# because the images it produces ARE committed, and how they were made should be
+# inspectable rather than folklore. Nothing else in the repo depends on it.
+#
 # Why not screen-grab, which captures the stills: its :input timeline offers
 # :key/:type/:click but no accessibility tap, and its own README states that a
 # synthetic :click "cannot actuate in-window controls in any app" — it moves the
