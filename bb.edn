@@ -8,6 +8,7 @@
 ;;   bb widgets                 interactive demo: every widget tag in one window
 ;;   bb temperature             interactive demo: 7GUIs Temperature Converter
 ;;   bb flights                 interactive demo: 7GUIs Flight Booker
+;;   bb timer                   interactive demo: 7GUIs Timer
 ;;   bb reactivity-smoke        live smoke: state-atom watch triggers reconcile
 ;;   bb replace-child-smoke     live smoke: :replace-child! child swap
 ;;   bb insert-before-smoke     live smoke: insert-before ordering
@@ -52,6 +53,7 @@
           (row "widgets" "interactive demo: every widget tag in one window")
           (row "temperature" "interactive demo: 7GUIs Temperature Converter")
           (row "flights" "interactive demo: 7GUIs Flight Booker")
+          (row "timer" "interactive demo: 7GUIs Timer")
           (hdr "Smoke (live AppKit, exits non-zero on failure)")
           (row "smoke" "end-to-end seam proof: mount, reconcile, quit")
           (row "reactivity-smoke" "state-atom watch triggers reconcile")
@@ -102,6 +104,9 @@
 
   flights {:doc "Interactive demo: the 7GUIs Flight Booker"
            :task (shell "jolt" "-M:flights")}
+
+  timer {:doc "Interactive demo: the 7GUIs Timer"
+         :task (shell "jolt" "-M:timer")}
 
   reactivity-smoke {:doc "Live-AppKit smoke: state-atom watch triggers reconcile"
                     :task (shell "jolt" "-M:reactivity-smoke")}

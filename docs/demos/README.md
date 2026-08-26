@@ -32,3 +32,7 @@ A task board on glitter.nexus: derived counts computed inline, an entry, and che
 
 ![flights](flights.png)
 
+### timer
+
+![timer](timer.png)
+

@@ -549,6 +549,19 @@
    (cls "NSTimer")
    (sel "scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:")
    (/ (double ms) 1000.0) target selector ffi/null 0))
+(defn timer-every!
+  "Schedule a REPEATING timer on the current thread's run loop. Same selector
+  shape as timer-after!; the only difference is repeats:YES, which is the last
+  argument (a BOOL, so :int per the BOOL-args rule above).
+
+  The returned NSTimer is the cancellation handle — a repeating timer runs until
+  it is invalidated, so a caller that drops the handle can never stop it."
+  [ms target selector]
+  (objc-msg-send-1d3pchar
+   (cls "NSTimer")
+   (sel "scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:")
+   (/ (double ms) 1000.0) target selector ffi/null 1))
+(defn timer-invalidate! [t] (objc-msg-send-0void t (sel "invalidate")))
 (defn current-run-loop [] (objc-msg-send-0 (cls "NSRunLoop") (sel "currentRunLoop")))
 (defn run-loop-until! [rl date] (objc-msg-send-1p rl (sel "runUntilDate:") date))
 (defn date-in [secs] (objc-msg-send-1d (cls "NSDate") (sel "dateWithTimeIntervalSinceNow:") (double secs)))

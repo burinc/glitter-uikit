@@ -148,6 +148,26 @@
       (w/apply-props! :entry e {:width-request 96})
       (is (= (inc before) (constraint-count e))))))
 
+(deftest repeating-timer-registers-and-cancels
+  ;; The registry mechanics are testable headlessly (creating an NSTimer does not
+  ;; need a running loop); that it actually FIRES needs the app loop, and was
+  ;; verified live instead — a 100ms ticker under a 1200ms auto-quit run produced
+  ;; 12 ticks, and cancel-every! left the registry empty.
+  ;;
+  ;; cancel-every! must do BOTH halves. Invalidating without dropping leaks the
+  ;; handler; dropping without invalidating leaves a live timer firing into an
+  ;; empty registry every tick, forever.
+  (let [before (count @w/ticks)
+        fired (atom 0)
+        t (w/every! 10000 (fn [] (swap! fired inc)))]
+    (testing "every! registers a handler against its own timer"
+      (is (= (inc before) (count @w/ticks)))
+      (is (contains? @w/ticks t)))
+    (testing "cancel-every! drops exactly that entry"
+      (w/cancel-every! t)
+      (is (= before (count @w/ticks)))
+      (is (not (contains? @w/ticks t))))))
+
 (deftest every-new-tag-is-registered
   (doseq [tag [:drop-down :scale :spin-button :progress-bar :level-bar
                :switch :password-entry :search-entry :image]]

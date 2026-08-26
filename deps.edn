@@ -63,6 +63,7 @@
            :widgets {:extra-paths ["examples"] :main-opts ["-m" "glitter-uikit.widgets"]}
            :temperature {:extra-paths ["examples"] :main-opts ["-m" "glitter-uikit.temperature"]}
            :flights {:extra-paths ["examples"] :main-opts ["-m" "glitter-uikit.flights"]}
+           :timer {:extra-paths ["examples"] :main-opts ["-m" "glitter-uikit.timer"]}
            :main-thread-smoke {:extra-paths ["examples"]
                                :main-opts ["-m" "glitter-uikit.main-thread-smoke"]}
            :repl-live-smoke {:extra-paths ["examples"]
@@ -80,5 +81,6 @@
          widgets "jolt -M:widgets"
          temperature "jolt -M:temperature"
          flights "jolt -M:flights"
+         timer "jolt -M:timer"
          main-thread-smoke "jolt -M:main-thread-smoke"
          repl-live-smoke "jolt -M:repl-live-smoke"}}

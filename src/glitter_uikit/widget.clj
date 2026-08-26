@@ -284,6 +284,10 @@
 (defonce actions (atom {}))      ; view ptr -> {event-keyword handler-fn}
 (defonce changes (atom {}))      ; view ptr -> handler-fn (text changed)
 (defonce ^:private auto-quit-app (atom nil))
+;; NSTimer ptr -> zero-arg fn, for repeating timers. Keyed by the timer rather
+;; than held in one global slot so two independent tickers cannot clobber each
+;; other, and so cancel-every! can drop exactly one.
+(defonce ticks (atom {}))
 
 (defonce ^:private fire-cb
   (ffi/foreign-callable
@@ -299,6 +303,13 @@
    (fn [_self _cmd notif]
      (let [control (u/objc-msg-send-0 notif (u/sel "object"))]
        (when-let [h (get @changes control)] (h control)))
+     0)
+   [:pointer :pointer :pointer] :void :collect-safe))
+
+(defonce ^:private tick-cb
+  (ffi/foreign-callable
+   (fn [_self _cmd timer]
+     (when-let [h (get @ticks timer)] (h))
      0)
    [:pointer :pointer :pointer] :void :collect-safe))
 
@@ -332,9 +343,31 @@
         (u/class-add-method c (u/sel "fire:") fire-cb "v@:@")
         (u/class-add-method c (u/sel "controlTextDidChange:") change-cb "v@:@")
         (u/class-add-method c (u/sel "autoQuit:") quit-cb "v@:@")
+        (u/class-add-method c (u/sel "tick:") tick-cb "v@:@")
         (u/class-add-method c (u/sel "applicationShouldTerminateAfterLastWindowClosed:") terminate-cb "c@:@")
         (u/objc-register-class-pair c)
         (u/objc-msg-send-0 c (u/sel "new"))))))
+
+(defn every!
+  "Run `f` (zero-arg) every `ms` on the AppKit main loop. Returns the NSTimer,
+  which is the handle `cancel-every!` needs.
+
+  Fires on the main thread, because NSTimer schedules onto the run loop it was
+  created on and the app loop runs on the main thread — so `f` may touch views
+  directly without going through glitter-uikit.app's cross-thread marshalling."
+  [ms f]
+  (let [t (u/timer-every! ms invoker (u/sel "tick:"))]
+    (swap! ticks assoc t f)
+    t))
+
+(defn cancel-every!
+  "Stop a timer from every! and drop its handler. Invalidating without dropping
+  leaks the handler; dropping without invalidating leaves a live timer firing
+  into an empty registry every tick, forever."
+  [timer]
+  (swap! ticks dissoc timer)
+  (u/timer-invalidate! timer)
+  nil)
 
 (defn auto-quit!
   "Schedule the app to quit after `ms` (the :auto-quit-ms run option)."
