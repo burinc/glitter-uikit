@@ -51,6 +51,12 @@
    :src   "examples/glitter_uikit/temperature.clj"
    :description "The 7GUIs Temperature Converter — two linked numeric fields, ported from glitter with its domain logic unchanged."}
 
+  {:id    "flights"
+   :group "7guis"
+   :run   "jolt -M:flights"
+   :src   "examples/glitter_uikit/flights.clj"
+   :description "The 7GUIs Flight Booker — a :drop-down, two validated date fields, and a Book button gated on both."}
+
   {:id    "todo"
    :group "basics"
    :run   "jolt -M:todo"

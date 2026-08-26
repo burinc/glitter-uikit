@@ -45,6 +45,9 @@
 (def ATTR-LEADING 5) (def ATTR-TRAILING 6)
 (def ATTR-WIDTH 7) (def ATTR-HEIGHT 8)
 (def ATTR-CENTER-X 9) (def ATTR-CENTER-Y 10)
+;; NSLayoutAttributeNotAnAttribute — the second item of a self-constraint
+;; (width == constant), where there is no other view to relate to.
+(def ATTR-NOT-AN-ATTRIBUTE 0)
 (def RELATION-EQUAL 0)
 ;; NSStackViewDistribution
 (def DISTRIBUTION-GRAVITY -1)
@@ -277,6 +280,20 @@
   [child parent]
   (set-translates-autoresizing! child false)
   (pin-constraints! child parent PRIORITY-REQUIRED))
+(defn set-width!
+  "Give `v` a fixed width through autolayout: a self-constraint of
+  width == points.
+
+  This is what :width-request needs and what setPreferredMaxLayoutWidth: is NOT
+  — the latter is a text-WRAPPING hint that leaves a control free to be
+  compressed to nothing. Measured before adding this: an :entry in a stack with
+  no width constraint is squeezed to zero width by a sibling, or clipped so a
+  10-character date renders as \"26.08.20\"."
+  [v points]
+  (set-translates-autoresizing! v false)
+  (objc-msg-send-1pvoid v (sel "addConstraint:")
+                        (constraint v ATTR-WIDTH ffi/null ATTR-NOT-AN-ATTRIBUTE 1.0 points)))
+
 (defn pin-low!
   "Pin `child` to `parent` at low priority — the child's intrinsic size wins
   when larger, so it can scroll. For a scroll view's document view."

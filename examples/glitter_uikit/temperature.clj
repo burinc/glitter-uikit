@@ -12,13 +12,13 @@
   with no toolkit in it, which is the whole point of glitter's renderer split.
   Only three things differ, all forced by the renderer:
 
-  1. :width-request is a GTK size-request prop this renderer does not
-     implement, and it has NO working equivalent for an :entry. entry-spec's
-     :width-chars / :max-width-chars route to setPreferredMaxLayoutWidth:
-     (ffi.clj:344), which is a text-WRAPPING hint, not a width constraint or a
-     minimum — measured: an :entry carrying :width-chars 12 still stretched to
-     fill its row and squeezed its sibling :entry to zero width. The two fields
-     row is laid out :homogeneous instead, which forces equal shares.
+  1. :width-chars is NOT a width here. It routes to setPreferredMaxLayoutWidth:
+     (ffi.clj), a text-WRAPPING hint — measured: an :entry carrying
+     :width-chars 12 still stretched to fill its row and squeezed its sibling
+     :entry to zero width. glitter's :width-request DOES work, but only because
+     this arc added it: it installs a real autolayout width constraint
+     (ffi.clj set-width!). Use :width-request for a field that must be a given
+     size; :width-chars only affects wrapping.
   2. app/run takes no :app-id — that is a GApplication identifier with no
      AppKit counterpart.
   3. The requires point at glitter-uikit.app / glitter-uikit.appkit. Everything
@@ -114,19 +114,21 @@
           :margin 16}
    [:label {:markup "<span size='xx-large' weight='bold'>Temperature Converter</span>"
             :halign :start}]
-   ;; :homogeneous true -> NSStackView DISTRIBUTION-FILL-EQUALLY (box-spec), so
-   ;; the four children get equal widths. Without it the first :entry takes the
-   ;; whole row's slack and the second is compressed to ZERO width — measured,
-   ;; and :hexpand true on both does NOT prevent it, because nothing here gives
-   ;; a field a minimum width (see docstring, deviation 1).
-   [:hbox {:spacing 8
-           :homogeneous true}
+   ;; :width-request gives each field a real autolayout width. Without one the
+   ;; first :entry takes the row's whole slack and the second is compressed to
+   ;; ZERO width — measured, and neither :hexpand on both nor :halign :fill
+   ;; prevented it. :homogeneous also worked, but only by making all four
+   ;; children equal, which is a coincidence of this row holding two fields and
+   ;; two labels rather than an actual width.
+   [:hbox {:spacing 8}
     [:entry {:text (format-number (:celsius state))
+             :width-request 96
              :valign :center
              :on {:change [[:action/set-temperature {:celsius [:fmt/number [:glitter/value]]}]]}}]
     [:label {:label "Celsius ="
              :valign :center}]
     [:entry {:text (format-number (:fahrenheit state))
+             :width-request 96
              :valign :center
              :on {:change [[:action/set-temperature {:fahrenheit [:fmt/number [:glitter/value]]}]]}}]
     [:label {:label "Fahrenheit"

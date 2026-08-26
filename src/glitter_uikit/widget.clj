@@ -633,16 +633,37 @@
 ;; :valign are recorded so the PARENT stack's alignment can be derived at append
 ;; time (NSStackView alignment is a stack-wide property, not per-view).
 (def ^:private alignments (atom {}))    ; view -> [halign valign]
+;; Views that already carry a width constraint, so a re-render does not stack a
+;; second one on top of the first.
+(def ^:private sized (atom #{}))
 
-(defn- ->stack-alignment [halign valign orientation]
+(defn- ->stack-alignment
+  "Map a child's :halign/:valign onto the PARENT stack's NSStackView alignment.
+
+  :fill is AppKit-specific and has no GTK counterpart, but it is the one that
+  makes a row of children actually span the stack: NSStackView aligns a vertical
+  stack's children on WIDTH (and a horizontal stack's on HEIGHT) rather than on
+  an edge or a centre line. Without it a vertical stack sizes every child to its
+  own natural width and centres it, which is why a label+entry row renders as a
+  narrow island in the middle of the window with the entry truncated.
+
+  MEASURED, and not yet the whole story: setting this alone did NOT make the
+  Flight Booker's rows span the window — its date fields still truncated. The
+  attribute is mapped correctly (NSStackView accepts WIDTH for a vertical stack)
+  but something further down still sizes the row to its content, so treat :fill
+  as available-but-unproven rather than as the fix for a narrow row. Whatever
+  actually governs this is unresolved; see docs/guide/limitations.md."
+  [halign valign orientation]
   (if (= orientation u/ORIENTATION-VERTICAL)
     (case halign
       :start u/ATTR-LEADING
       :end   u/ATTR-TRAILING
+      :fill  u/ATTR-WIDTH
       u/ATTR-CENTER-X)
     (case valign
       :top    u/ATTR-TOP
       :bottom u/ATTR-BOTTOM
+      :fill   u/ATTR-HEIGHT
       u/ATTR-CENTER-Y)))
 
 (defn apply-widget-props!
@@ -653,6 +674,13 @@
   (when (contains? props :vexpand)
     (u/set-hugging! widget (if (:vexpand props) u/PRIORITY-VERY-LOW u/PRIORITY-REQUIRED)
                     u/ORIENTATION-VERTICAL))
+  ;; :width-request / :height-request install a real autolayout constraint.
+  ;; Applied once per view: a constraint is cumulative, so re-adding it on every
+  ;; re-render would pile up conflicting constraints on the same view.
+  (when-let [w (:width-request props)]
+    (when-not (contains? @sized widget)
+      (swap! sized conj widget)
+      (u/set-width! widget (double w))))
   (when (or (contains? props :halign) (contains? props :valign))
     (swap! alignments assoc widget [(:halign props) (:valign props)])))
 

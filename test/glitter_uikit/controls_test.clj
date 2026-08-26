@@ -128,6 +128,26 @@
                                 :value 7})
       (is (= 7.0 (f s))))))
 
+(defn- constraint-count [view]
+  (u/array-count (u/objc-msg-send-0 view (u/sel "constraints"))))
+
+(deftest width-request-installs-a-real-width-constraint
+  ;; :width-chars routes to setPreferredMaxLayoutWidth:, a text-WRAPPING hint
+  ;; that leaves a control free to be compressed to nothing. :width-request
+  ;; installs an actual autolayout constraint, which is the only thing measured
+  ;; to keep a field from collapsing next to a sibling label. Four other routes
+  ;; were tried live and did nothing: :vexpand false, :hexpand on the field,
+  ;; :hexpand on the row, and :halign :fill.
+  (let [e (w/create! :entry {})
+        before (constraint-count e)]
+    (w/apply-props! :entry e {:width-request 96})
+    (testing "a constraint is added"
+      (is (= (inc before) (constraint-count e))))
+    (testing "re-rendering does NOT stack a second, conflicting constraint"
+      (w/apply-props! :entry e {:width-request 96})
+      (w/apply-props! :entry e {:width-request 96})
+      (is (= (inc before) (constraint-count e))))))
+
 (deftest every-new-tag-is-registered
   (doseq [tag [:drop-down :scale :spin-button :progress-bar :level-bar
                :switch :password-entry :search-entry :image]]
