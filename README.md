@@ -165,6 +165,24 @@ for widget-layer mechanics.
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    core["glitter.core<br/>the reconciler, toolkit-agnostic"]
+    appkit["glitter-uikit.appkit<br/>IRender + IMemory"]
+    widget["glitter-uikit.widget<br/>hiccup → NSView · prop appliers · containers"]
+    ffi["glitter-uikit.ffi<br/>Objective-C runtime · AppKit · Foundation"]
+    app["glitter-uikit.app<br/>NSApplication loop · cross-thread marshalling"]
+
+    core -- "calls IRender/IMemory" --> appkit
+    appkit -- "widget spec registry" --> widget
+    widget -- "objc_msgSend" --> ffi
+    app -- "owns the run loop, mounts into a window" --> appkit
+    app --> ffi
+
+    classDef ext fill:#2b2f3a,stroke:#8e939d,color:#e6e9ef;
+    class core ext;
+```
+
 Four namespaces:
 
 - `glitter-uikit.ffi` — AppKit/Foundation FFI layer via `jolt.ffi`.

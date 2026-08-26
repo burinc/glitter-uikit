@@ -64,24 +64,31 @@ hook, not by `verify`.
 
 ## Architecture
 
-```
-glitter-uikit.ffi (AppKit/Foundation FFI)
-    │
-    ▼
-glitter-uikit.widget (hiccup -> NSView, prop appliers, containers)
-    │
-    ▼
-glitter-uikit.appkit (IRender/IMemory + glitter.core integration)
-    │
-    ▼
-glitter-uikit.app (NSApplication loop + app lifecycle)
+```mermaid
+flowchart TD
+    core["glitter.core<br/>the reconciler, toolkit-agnostic"]
+    appkit["glitter-uikit.appkit<br/>IRender + IMemory"]
+    widget["glitter-uikit.widget<br/>hiccup → NSView · prop appliers · containers"]
+    ffi["glitter-uikit.ffi<br/>Objective-C runtime · AppKit · Foundation"]
+    app["glitter-uikit.app<br/>NSApplication loop · cross-thread marshalling"]
+
+    core -- "calls IRender/IMemory" --> appkit
+    appkit -- "widget spec registry" --> widget
+    widget -- "objc_msgSend" --> ffi
+    app -- "owns the run loop, mounts into a window" --> appkit
+    app --> ffi
+
+    classDef ext fill:#2b2f3a,stroke:#8e939d,color:#e6e9ef;
+    class core ext;
 ```
 
 - `glitter-uikit.ffi` contains all Objective-C FFI bindings and low-level
   AppKit wrappers.
-- `glitter-uikit.widget` maps tags (`:window`, `:box`/`:hbox`/`:vbox`,
-  `:button`, `:label`, `:entry`, `:checkbutton`, `:separator`, `:frame`,
-  `:scrolled`) to their AppKit views and implements the prop/container
+- `glitter-uikit.widget` maps **nineteen tags** to their AppKit views — v1's
+  `:window`, `:box`/`:hbox`/`:vbox`, `:button`, `:label`, `:entry`,
+  `:checkbutton`, `:separator`, `:frame`, `:scrolled`, plus `:drop-down`,
+  `:scale`, `:spin-button`, `:progress-bar`, `:level-bar`, `:switch`,
+  `:password-entry`, `:search-entry`, `:image` and `:canvas` and implements the prop/container
   lifecycle. Unlike glitter.gtk, this layer carries NO event-signal
   wrapping (glitter.core calls `glitter-uikit.appkit`'s `IRender`
   directly) and NO suppression set (AppKit setters are silent).
