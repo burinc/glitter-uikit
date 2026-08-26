@@ -1,0 +1,33 @@
+;; screen-grab manifest for the ONE demo that can be recorded as a GIF.
+;; https://github.com/burinc/b12n-screen-grab
+;;
+;; Why only one: glitter records a GIF per demo by steering it with a synthetic
+;; Tab/Space/type :input timeline. That works against GTK and does NOT reach an
+;; AppKit window — probed 2026-08-25: five Tab/Space presses left the counter at
+;; 0 with no focus ring, and :type left a focused NSTextField showing only its
+;; placeholder. On macOS a button takes keyboard focus only under "Full Keyboard
+;; Access". So every demo that needs a keystroke to do anything stays a still,
+;; captured by scripts/demo_manifest.edn.
+;;
+;; `timer` is the exception, and glitter's own manifest agrees: its timer entry
+;; is `{:duration 10}` with NO :input either. The demo animates on its own — a
+;; repeating NSTimer drives the progress bar — so a recording of it is a real
+;; recording of the thing working, with nothing synthesised.
+{:driver  :spawn
+ :capture :cgevent-gif
+ :out-dir "docs/demos"
+ ;; Its OWN ledger and README, not the stills manifest's. screen-grab keys a
+ ;; ledger entry by :id alone — the format is not part of the key — so a record
+ ;; run and a shot run sharing an out-dir overwrite each other's entries, and
+ ;; the second one to finish rewrites README.md with only its own items. Hit
+ ;; live: one record run reduced a six-still README to a single GIF line.
+ :ledger  "docs/demos/gifs-ledger.edn"
+ :readme  "docs/demos/GIFS.md"
+ :defaults {:duration 10 :fps 10 :width 520 :warmup 12}
+
+ :examples
+ [{:id    "timer"
+   :group "7guis"
+   :run   "jolt -M:timer"
+   :src   "examples/glitter_uikit/timer.clj"
+   :description "The 7GUIs Timer, recorded live — the bar advances on its own, no synthetic input involved."}]}
