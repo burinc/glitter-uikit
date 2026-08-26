@@ -15,11 +15,18 @@ name: CI
 # lint-, format- and ns-clean on a machine that is not the maintainer's.
 # ---------------------------------------------------------------------------
 
+# MANUAL TRIGGER ONLY, deliberately. This account's Actions are blocked at the
+# billing level ("The job was not started because recent account payments have
+# failed or your spending limit needs to be increased"), so an automatic
+# pull_request/push trigger would put a red X on every commit and mail a failure
+# for each one — which reads as a broken project to anyone visiting.
+#
+# Re-enabling is a three-line edit once billing allows it:
+#   pull_request: {branches: [main]}
+#   push:         {branches: [main]}
+# Note macos-latest bills at a 10x minute multiplier on PRIVATE repos; standard
+# runners are free for PUBLIC ones, so the calculus changes with visibility.
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       jolt-version:
