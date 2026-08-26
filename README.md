@@ -204,6 +204,18 @@ See `docs/guide/index.md` for the full breakdown.
 - Design spec and implementation plan are kept in a private planning store and
   are not part of this repository.
 
+## Licence
+
+MIT for this project's own code — see [`LICENSE`](LICENSE).
+
+**Read [`NOTICE.md`](NOTICE.md) before reusing any of it.** Parts of
+`src/glitter_uikit/` are forked from
+[glimmer-uikit](https://github.com/jolt-lang/glimmer-uikit), which ships no
+LICENSE file at all — absent a license, default copyright reserves all rights,
+so no grant has been made for that material. `NOTICE.md` records the
+file-by-file provenance, pinned to the exact ref and SHA so the claim is
+falsifiable.
+
 ## Status
 
 Ported from glimmer-uikit v0.1.0 (2026-08-20 arc) — see `NOTICE.md` for the
