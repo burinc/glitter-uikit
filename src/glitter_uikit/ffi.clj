@@ -62,6 +62,17 @@
 (def BEZEL-ROUNDED 1)
 ;; NSControlStateValue
 (def STATE-OFF 0) (def STATE-ON 1)
+
+;; NSProgressIndicatorStyle: bar is 0, spinning is 1 (NSProgressIndicator.h).
+(def PROGRESS-STYLE-BAR 0)
+(def PROGRESS-STYLE-SPINNING 1)
+;; NSLevelIndicatorStyle (NSLevelIndicator.h): relevancy 0, continuous 1,
+;; discrete 2, rating 3.
+(def LEVEL-STYLE-CONTINUOUS 1)
+(def LEVEL-STYLE-DISCRETE 2)
+;; NSImageScaling (NSImageCell.h): proportionally-down 3 is the sane default for
+;; an image view given an arbitrary file.
+(def IMAGE-SCALE-PROPORTIONAL-DOWN 3)
 ;; NSEventType
 (def EVENT-APPLICATION-DEFINED 15)
 ;; NSLayoutPriority
@@ -105,6 +116,9 @@
 (ffi/defcfn objc-msg-send-2dvoid   "objc_msgSend" [:pointer :pointer :double :double] :void)
 (ffi/defcfn objc-msg-send-4d       "objc_msgSend" [:pointer :pointer :double :double :double :double] :pointer)
 (ffi/defcfn objc-msg-send-4dvoid   "objc_msgSend" [:pointer :pointer :double :double :double :double] :void)
+;; initWithFrame:pullsDown: (NSPopUpButton) — CGRect as 4 doubles, then a BOOL
+;; (:int, per the BOOL-args rule above)
+(ffi/defcfn objc-msg-send-4d1i "objc_msgSend" [:pointer :pointer :double :double :double :double :int] :pointer)
 ;; window init: (id, SEL, CGRect as 4 doubles, NSUInteger style, NSInteger backing, BOOL defer)
 (ffi/defcfn objc-msg-send-4d3
   "objc_msgSend" [:pointer :pointer :double :double :double :double :int64 :int64 :int] :pointer)
@@ -344,6 +358,103 @@
 (defn control-preferred-width! [c d] (objc-msg-send-1dvoid c (sel "setPreferredMaxLayoutWidth:") (double d)))
 (defn control-attributed! [c a] (objc-msg-send-1pvoid c (sel "setAttributedStringValue:") a))
 (defn control-font! [c f] (objc-msg-send-1pvoid c (sel "setFont:") f))
+
+(defn control-double! [c d] (objc-msg-send-1dvoid c (sel "setDoubleValue:") (double d)))
+(defn control-double [c] (objc-msg-send-0d c (sel "doubleValue")))
+(defn control-min! [c d] (objc-msg-send-1dvoid c (sel "setMinValue:") (double d)))
+(defn control-max! [c d] (objc-msg-send-1dvoid c (sel "setMaxValue:") (double d)))
+
+;; --- NSPopUpButton (the :drop-down tag) --------------------------------------
+;; initWithFrame:pullsDown: rather than the +popUpButtonWithTitle: convenience,
+;; because pullsDown:NO is what makes it a select-one POP-UP rather than a
+;; pull-down MENU, and the convenience constructors do not expose that choice.
+(defn popup-new []
+  (objc-msg-send-4d1i
+   (objc-msg-send-0 (cls "NSPopUpButton") (sel "alloc"))
+   (sel "initWithFrame:pullsDown:") 0.0 0.0 0.0 0.0 0))
+(defn popup-add-item! [p s] (objc-msg-send-1pvoid p (sel "addItemWithTitle:") (nsstring s)))
+(defn popup-remove-all! [p] (objc-msg-send-0void p (sel "removeAllItems")))
+(defn popup-count [p] (objc-msg-send-0i64 p (sel "numberOfItems")))
+(defn popup-select! [p i] (objc-msg-send-1i64void p (sel "selectItemAtIndex:") i))
+;; -indexOfSelectedItem returns -1 when nothing is selected, which is a real
+;; state (an emptied menu), not an error. Callers get the raw NSInteger and
+;; decide; the widget layer maps it through selected-index.
+(defn popup-selected [p] (objc-msg-send-0i64 p (sel "indexOfSelectedItem")))
+
+;; --- NSSlider (:scale) / NSStepper (:spin-button) ----------------------------
+(defn slider-new []
+  (objc-msg-send-4d (objc-msg-send-0 (cls "NSSlider") (sel "alloc"))
+                    (sel "initWithFrame:") 0.0 0.0 0.0 0.0))
+(defn slider-ticks! [s n] (objc-msg-send-1i64void s (sel "setNumberOfTickMarks:") n))
+(defn slider-only-ticks! [s b] (objc-msg-send-1intvoid s (sel "setAllowsTickMarkValuesOnly:") (if b 1 0)))
+(defn stepper-new []
+  (objc-msg-send-4d (objc-msg-send-0 (cls "NSStepper") (sel "alloc"))
+                    (sel "initWithFrame:") 0.0 0.0 0.0 0.0))
+(defn stepper-increment! [s d] (objc-msg-send-1dvoid s (sel "setIncrement:") (double d)))
+(defn stepper-wraps! [s b] (objc-msg-send-1intvoid s (sel "setValueWraps:") (if b 1 0)))
+
+;; --- NSProgressIndicator (:progress-bar) / NSLevelIndicator (:level-bar) -----
+;; NSProgressIndicator is an NSView, NOT an NSControl, so it has no target/action
+;; and no -doubleValue via NSControl — but it does declare its own -doubleValue /
+;; -setDoubleValue:, so control-double!/control-double work on it by selector.
+(defn progress-new []
+  (let [p (objc-msg-send-4d (objc-msg-send-0 (cls "NSProgressIndicator") (sel "alloc"))
+                            (sel "initWithFrame:") 0.0 0.0 0.0 0.0)]
+    (objc-msg-send-1i64void p (sel "setStyle:") PROGRESS-STYLE-BAR)
+    (objc-msg-send-1intvoid p (sel "setIndeterminate:") 0)
+    ;; 0..1, so glitter's :fraction maps straight onto -setDoubleValue: without
+    ;; the widget layer rescaling. AppKit's own default range is 0..100.
+    (objc-msg-send-1dvoid p (sel "setMinValue:") 0.0)
+    (objc-msg-send-1dvoid p (sel "setMaxValue:") 1.0)
+    p))
+(defn progress-indeterminate! [p b] (objc-msg-send-1intvoid p (sel "setIndeterminate:") (if b 1 0)))
+(defn progress-start! [p] (objc-msg-send-1pvoid p (sel "startAnimation:") ffi/null))
+(defn progress-stop! [p] (objc-msg-send-1pvoid p (sel "stopAnimation:") ffi/null))
+(defn level-new []
+  (objc-msg-send-4d (objc-msg-send-0 (cls "NSLevelIndicator") (sel "alloc"))
+                    (sel "initWithFrame:") 0.0 0.0 0.0 0.0))
+(defn level-style! [l v] (objc-msg-send-1i64void l (sel "setLevelIndicatorStyle:") v))
+
+;; --- NSSwitch (:switch) ------------------------------------------------------
+;; API_AVAILABLE(macos(10.15)) in NSSwitch.h — the only widget here that is not
+;; available on this project's former 10.13 floor. objc-get-class returns null
+;; on an older system rather than trapping, so switch-supported? lets the widget
+;; layer fail with a clear message instead of a null-pointer crash.
+(defn switch-supported? [] (let [c (objc-get-class "NSSwitch")] (and c (not (ffi/null? c)))))
+(defn switch-new []
+  (objc-msg-send-4d (objc-msg-send-0 (cls "NSSwitch") (sel "alloc"))
+                    (sel "initWithFrame:") 0.0 0.0 0.0 0.0))
+
+;; --- NSSecureTextField (:password-entry) / NSSearchField (:search-entry) -----
+;; Both are NSTextField subclasses, so every entry prop applier (control-string!,
+;; control-placeholder!, control-enabled!) and the controlTextDidChange: delegate
+;; path work on them unchanged.
+(defn secure-entry-new []
+  (let [e (objc-msg-send-4d (objc-msg-send-0 (cls "NSSecureTextField") (sel "alloc"))
+                            (sel "initWithFrame:") 0.0 0.0 0.0 0.0)]
+    (objc-msg-send-1i64void e (sel "setBezelStyle:") BEZEL-ROUNDED)
+    (objc-msg-send-1intvoid e (sel "setEditable:") 1)
+    (objc-msg-send-1intvoid e (sel "setBordered:") 1)
+    e))
+(defn search-entry-new []
+  (let [e (objc-msg-send-4d (objc-msg-send-0 (cls "NSSearchField") (sel "alloc"))
+                            (sel "initWithFrame:") 0.0 0.0 0.0 0.0)]
+    (objc-msg-send-1intvoid e (sel "setEditable:") 1)
+    e))
+
+;; --- NSImageView (:image) ----------------------------------------------------
+(defn image-view-new []
+  (let [v (objc-msg-send-4d (objc-msg-send-0 (cls "NSImageView") (sel "alloc"))
+                            (sel "initWithFrame:") 0.0 0.0 0.0 0.0)]
+    (objc-msg-send-1i64void v (sel "setImageScaling:") IMAGE-SCALE-PROPORTIONAL-DOWN)
+    v))
+;; Returns null for a missing/unreadable path — NSImage's initWithContentsOfFile:
+;; returns nil rather than raising, so the widget layer checks before setting.
+(defn image-from-file [path]
+  (objc-msg-send-1p (objc-msg-send-0 (cls "NSImage") (sel "alloc"))
+                    (sel "initWithContentsOfFile:") (nsstring path)))
+(defn image-named [name] (objc-msg-send-1p (cls "NSImage") (sel "imageNamed:") (nsstring name)))
+(defn image-view-image! [v img] (objc-msg-send-1pvoid v (sel "setImage:") img))
 
 ;; --- NSBox / NSScrollView ---------------------------------------------------
 (defn box-new

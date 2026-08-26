@@ -64,7 +64,11 @@
 ;; --- events ------------------------------------------------------------------
 ;; Which glitter event keywords route through an NSControl's single
 ;; target/action slot, versus the NSTextField delegate.
-(def ^:private action-events #{:click :toggled :activate})
+;; :value-changed (:scale, :spin-button) and :selected-changed (:drop-down) are
+;; glitter's own GTK-side names, kept identical so the same hiccup drives either
+;; renderer. Both arrive through the SAME NSControl target/action slot as :click
+;; — AppKit has one action per control, not GTK's named signals.
+(def ^:private action-events #{:click :toggled :activate :value-changed :selected-changed})
 
 ;; Which [tag event] pairs carry a value the handler wants: [tag event] ->
 ;; (fn [view] value). Keyed by [tag event], NOT by bare event, carried from
@@ -79,7 +83,25 @@
 (defonce signal-value
   (atom {[:entry :change]        (fn [view] (u/control-string view))
          [:entry :activate]      (fn [view] (u/control-string view))
-         [:checkbutton :toggled] (fn [view] (= u/STATE-ON (u/control-state view)))}))
+         [:checkbutton :toggled] (fn [view] (= u/STATE-ON (u/control-state view)))
+         ;; Added with the post-v1 controls. The table is keyed by [tag event],
+         ;; and this is where that earns its keep: :scale and :spin-button share
+         ;; :value-changed and read the same doubleValue, :switch shares :toggled
+         ;; with :checkbutton, and :drop-down's :selected-changed reads an INDEX
+         ;; rather than a value.
+         [:scale :value-changed]       (fn [view] (u/control-double view))
+         [:spin-button :value-changed] (fn [view] (u/control-double view))
+         [:switch :toggled]            (fn [view] (= u/STATE-ON (u/control-state view)))
+         ;; -indexOfSelectedItem is -1 when nothing is selected (an emptied menu).
+         ;; Passed through as nil, so a handler cannot mistake it for a real index.
+         [:drop-down :selected-changed] (fn [view] (let [i (u/popup-selected view)]
+                                                     (when (nat-int? i) i)))
+         ;; NSSearchField / NSSecureTextField are NSTextField subclasses, so they
+         ;; reach the same controlTextDidChange: delegate as :entry.
+         [:search-entry :change]       (fn [view] (u/control-string view))
+         [:search-entry :activate]     (fn [view] (u/control-string view))
+         [:password-entry :change]     (fn [view] (u/control-string view))
+         [:password-entry :activate]   (fn [view] (u/control-string view))}))
 
 (defn register-signal-value!
   "Teach the renderer to extract a value for `event` on views of type `tag`.

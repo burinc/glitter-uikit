@@ -37,7 +37,8 @@
                      glitter-uikit.ffi-test
                      glitter-uikit.container-test
                      glitter-uikit.widget-test
-                     glitter-uikit.appkit-test]]
+                     glitter-uikit.appkit-test
+                     glitter-uikit.controls-test]]
     (doseq [ns namespaces]
       (try (require ns :reload)
            (catch Exception e

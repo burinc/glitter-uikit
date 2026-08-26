@@ -15,6 +15,17 @@
     :frame     NSBox (titled)
     :scrolled  NSScrollView (single document view)
 
+  Added after v1's nine tags:
+    :drop-down      NSPopUpButton (pullsDown:NO — select-one, not a menu)
+    :scale          NSSlider
+    :spin-button    NSStepper (arrows only — no built-in text field, unlike GTK)
+    :progress-bar   NSProgressIndicator (bar style, range fixed at 0..1)
+    :level-bar      NSLevelIndicator
+    :switch         NSSwitch  (macOS 10.15+ — the only version-gated tag)
+    :password-entry NSSecureTextField (NSTextField subclass)
+    :search-entry   NSSearchField     (NSTextField subclass)
+    :image          NSImageView
+
   Note on events: this namespace was forked from glimmer-uikit, whose
   Reagent-style model connects target/action ONCE at mount and lets the handler
   close over a reactive cell. glitter does NOT work that way. Its handlers are
@@ -439,6 +450,140 @@
    :apply    (fn [w p] (when (contains? p :label) (u/box-title! w (or (:label p) ""))))
    :container :frame})
 
+(defn- drop-down-spec []
+  ;; :items is applied BEFORE :selected on purpose — selectItemAtIndex: with an
+  ;; index outside the current menu raises an ObjC exception, and an ObjC
+  ;; exception ABORTS the process here (a Clojure catch cannot intercept it; see
+  ;; AGENTS.md gotcha 5). Rebuilding the menu first, then bounds-checking the
+  ;; index against the menu that now exists, is what keeps that unreachable.
+  {:ctor  (fn [_] (u/popup-new))
+   :apply (fn [w p]
+            (when (contains? p :items)
+              (u/popup-remove-all! w)
+              (run! (fn [i] (u/popup-add-item! w (str i))) (:items p)))
+            (when (contains? p :selected)
+              (let [i (:selected p)
+                    n (u/popup-count w)]
+                (when (and (integer? i) (<= 0 i) (< i n))
+                  (u/popup-select! w i))))
+            (when (contains? p :sensitive) (u/control-enabled! w (:sensitive p)))
+            (when (:tooltip p) (u/set-tooltip! w (:tooltip p))))
+   :container :none})
+
+(defn- scale-spec []
+  ;; :min/:max before :value, so a value inside the new range is not clamped
+  ;; against the OLD range on a render that widens both at once.
+  ;;
+  ;; glitter's GTK :scale also takes :step, :digits and :draw-value. NSSlider has
+  ;; no counterpart for any of them: it is continuous, shows no value label, and
+  ;; quantises only via tick marks. They are accepted and ignored rather than
+  ;; rejected, so a glitter view ports unchanged; :ticks below is the AppKit-side
+  ;; way to quantise. Recorded in docs/guide/limitations.md.
+  {:ctor  (fn [_] (u/slider-new))
+   :apply (fn [w p]
+            (when (contains? p :min) (u/control-min! w (:min p)))
+            (when (contains? p :max) (u/control-max! w (:max p)))
+            (when (contains? p :value) (u/control-double! w (:value p)))
+            (when (contains? p :ticks)
+              (u/slider-ticks! w (:ticks p))
+              (u/slider-only-ticks! w (boolean (:ticks-only p))))
+            (when (contains? p :sensitive) (u/control-enabled! w (:sensitive p)))
+            (when (:tooltip p) (u/set-tooltip! w (:tooltip p))))
+   :container :none})
+
+(defn- spin-button-spec []
+  ;; An NSStepper is ONLY the up/down arrows — unlike GtkSpinButton it has no
+  ;; built-in text field, so a view that wants to show the number pairs it with
+  ;; a sibling :label or :entry. :digits has no counterpart and is ignored.
+  {:ctor  (fn [_] (u/stepper-new))
+   :apply (fn [w p]
+            (when (contains? p :min) (u/control-min! w (:min p)))
+            (when (contains? p :max) (u/control-max! w (:max p)))
+            (when (contains? p :step) (u/stepper-increment! w (:step p)))
+            (when (contains? p :wrap) (u/stepper-wraps! w (:wrap p)))
+            (when (contains? p :value) (u/control-double! w (:value p)))
+            (when (contains? p :sensitive) (u/control-enabled! w (:sensitive p))))
+   :container :none})
+
+(defn- progress-bar-spec []
+  ;; progress-new fixes the range at 0..1 so :fraction maps straight through.
+  ;; :show-text / :text are GTK-only (NSProgressIndicator draws no text) and are
+  ;; accepted and ignored; pair it with a :label to show a number.
+  {:ctor  (fn [_] (u/progress-new))
+   :apply (fn [w p]
+            (when (contains? p :indeterminate)
+              (u/progress-indeterminate! w (:indeterminate p))
+              (if (:indeterminate p) (u/progress-start! w) (u/progress-stop! w)))
+            (when (contains? p :fraction) (u/control-double! w (:fraction p)))
+            (when (contains? p :value) (u/control-double! w (:value p))))
+   :container :none})
+
+(defn- level-bar-spec []
+  {:ctor  (fn [_] (u/level-new))
+   :apply (fn [w p]
+            (when (contains? p :min-value) (u/control-min! w (:min-value p)))
+            (when (contains? p :max-value) (u/control-max! w (:max-value p)))
+            (when (contains? p :discrete)
+              (u/level-style! w (if (:discrete p) u/LEVEL-STYLE-DISCRETE u/LEVEL-STYLE-CONTINUOUS)))
+            (when (contains? p :value) (u/control-double! w (:value p))))
+   :container :none})
+
+(defn- switch-spec []
+  ;; NSSwitch is API_AVAILABLE(macos(10.15)). ctor throws a named error rather
+  ;; than letting (cls "NSSwitch") hand back null and crash inside objc_msgSend
+  ;; with nothing pointing at the cause.
+  {:ctor  (fn [_]
+            (when-not (u/switch-supported?)
+              (throw (ex-info "glitter-uikit: :switch needs macOS 10.15+ (NSSwitch)"
+                              {:tag :switch
+                               :required "10.15"})))
+            (u/switch-new))
+   :apply (fn [w p]
+            (when (contains? p :active)
+              (u/control-state! w (if (:active p) u/STATE-ON u/STATE-OFF)))
+            (when (contains? p :sensitive) (u/control-enabled! w (:sensitive p))))
+   :container :none})
+
+(defn- password-entry-spec []
+  ;; NSSecureTextField is an NSTextField subclass, so it reuses entry-spec's
+  ;; only-when-different guard verbatim — re-setting stringValue mid-typing
+  ;; resets the insertion point here exactly as it does for a plain :entry.
+  ;; GTK's :show-peek-icon has no counterpart and is ignored.
+  {:ctor  (fn [_] (u/secure-entry-new))
+   :apply (fn [w p]
+            (when (and (contains? p :text) (not= (:text p) (u/control-string w)))
+              (u/control-string! w (:text p)))
+            (when (contains? p :placeholder) (u/control-placeholder! w (:placeholder p)))
+            (when (contains? p :sensitive)   (u/control-enabled! w (:sensitive p))))
+   :container :none})
+
+(defn- search-entry-spec []
+  ;; Same NSTextField lineage and the same guard. GTK's :search-delay has no
+  ;; counterpart (NSSearchField sends its action as you type) and is ignored.
+  {:ctor  (fn [_] (u/search-entry-new))
+   :apply (fn [w p]
+            (when (and (contains? p :text) (not= (:text p) (u/control-string w)))
+              (u/control-string! w (:text p)))
+            (when (contains? p :placeholder) (u/control-placeholder! w (:placeholder p)))
+            (when (contains? p :sensitive)   (u/control-enabled! w (:sensitive p))))
+   :container :none})
+
+(defn- image-spec []
+  ;; :file is a filesystem path, :icon-name a named system image. A path that
+  ;; does not resolve leaves the view empty rather than throwing: NSImage's
+  ;; initWithContentsOfFile: returns nil for a missing file, and setImage: nil
+  ;; is legal. GTK's :pixel-size has no counterpart; size the view with the
+  ;; surrounding layout instead.
+  {:ctor  (fn [_] (u/image-view-new))
+   :apply (fn [w p]
+            (when (contains? p :file)
+              (let [img (u/image-from-file (:file p))]
+                (when-not (ffi/null? img) (u/image-view-image! w img))))
+            (when (contains? p :icon-name)
+              (let [img (u/image-named (:icon-name p))]
+                (when-not (ffi/null? img) (u/image-view-image! w img)))))
+   :container :none})
+
 (defn- scrolled-spec []
   ;; A single-document viewport. The document is pinned to the clip view at LOW
   ;; priority so it scrolls inside the allotted area instead of forcing the
@@ -455,6 +600,16 @@
          :entry       (entry-spec)
          :checkbutton (checkbutton-spec)
          :separator   (separator-spec)
+         ;; --- added after v1's nine tags; see docs/guide/appkit-widget-layer.md
+         :drop-down      (drop-down-spec)
+         :scale          (scale-spec)
+         :spin-button    (spin-button-spec)
+         :progress-bar   (progress-bar-spec)
+         :level-bar      (level-bar-spec)
+         :switch         (switch-spec)
+         :password-entry (password-entry-spec)
+         :search-entry   (search-entry-spec)
+         :image          (image-spec)
          :frame       (frame-spec)
          :scrolled    (scrolled-spec)}))
 
