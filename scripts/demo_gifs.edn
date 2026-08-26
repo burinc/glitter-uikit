@@ -1,13 +1,19 @@
 ;; screen-grab manifest for the ONE demo that can be recorded as a GIF.
 ;; https://github.com/burinc/b12n-screen-grab
 ;;
-;; Why only one: glitter records a GIF per demo by steering it with a synthetic
-;; Tab/Space/type :input timeline. That works against GTK and does NOT reach an
-;; AppKit window — probed 2026-08-25: five Tab/Space presses left the counter at
-;; 0 with no focus ring, and :type left a focused NSTextField showing only its
-;; placeholder. On macOS a button takes keyboard focus only under "Full Keyboard
-;; Access". So every demo that needs a keystroke to do anything stays a still,
-;; captured by scripts/demo_manifest.edn.
+;; Why only one, and it is NOT the reason first recorded here. Synthetic input
+;; does reach an AppKit window: cgevent's :tap-by-role presses a control through
+;; the accessibility API (AXPress), and once a field is focused that way a
+;; synthetic :type lands in it. Both measured — a flow drove the counter 0 -> 3,
+;; and typing 100 into the converter produced 212. A 21-frame GIF of the counter
+;; was recorded that way.
+;;
+;; The actual blocker is the accessibility TREE, not input. From a cold,
+;; unattended launch the app exposes only a recursive AXApplication with no
+;; AXWindow child, so a flow finds nothing to press. It populated only after a
+;; human had interacted with the window. Activating via System Events, clicking
+;; the title bar synthetically, and polling for 30s all failed to wake it.
+;; Until that is solved, every demo needing interaction stays a still.
 ;;
 ;; `timer` is the exception, and glitter's own manifest agrees: its timer entry
 ;; is `{:duration 10}` with NO :input either. The demo animates on its own — a

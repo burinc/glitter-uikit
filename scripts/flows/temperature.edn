@@ -1,0 +1,19 @@
+;; Drives temperature.clj for docs/demos/temperature.gif.
+;;
+;; The two-step shape is the point: :tap-by-role focuses the field through the
+;; accessibility API, and only THEN does a synthetic :type land in it. Typing
+;; without focusing first goes to whatever app is frontmost — which is why an
+;; earlier probe here concluded, wrongly, that synthetic input cannot reach an
+;; AppKit window at all.
+;;
+;; command+a before typing because the field already holds "0"; without it the
+;; text appends and the field reads "0100".
+[[:wait-for-quiescence 600]
+ [:tap-by-role {:role "AXTextField" :text "0"}]
+ [:wait-for-quiescence 400]
+ [:key "command + a"]
+ [:type "100"]
+ [:wait-for-quiescence 1200]
+ [:key "command + a"]
+ [:type "37"]
+ [:wait-for-quiescence 1200]]

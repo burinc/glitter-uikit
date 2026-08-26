@@ -121,11 +121,24 @@ are the index; that page is the argument.
 ## Stills, not animations — with one real exception
 
 glitter records a GIF per demo by steering it with a synthetic Tab/Space/type
-`:input` timeline. That recipe is verified against GTK and **does not reach an
-AppKit window**: probed here, five Tab/Space presses left the counter at 0 with
-no focus ring, and `:type` left a focused `NSTextField` showing only its
-placeholder. On macOS a button takes keyboard focus only under "Full Keyboard
-Access". So every demo that needs a keystroke to do anything is a still.
+`:input` timeline. That recipe does not transfer here — but **not for the reason
+first recorded on this page**, which was wrong and is corrected below.
+
+Synthetic input *does* reach an AppKit window. `cgevent`'s `:tap-by-role`
+presses a control through the accessibility API (`AXPress`) rather than
+synthesising a click at coordinates, and once a field is focused that way a
+synthetic `:type` lands in it. Both measured: a flow drove the counter from
+0 to 3, and typing `100` into the converter produced `212`. A 21-frame GIF of
+the counter was recorded that way.
+
+The real blocker is the accessibility **tree**. From a cold, unattended launch
+the app exposes only a recursive `AXApplication` with no `AXWindow` child, so a
+recorded flow finds no button to press. It populated only after a human had
+interacted with the window. Activating through System Events, clicking the title
+bar synthetically, and polling for thirty seconds all failed to wake it. Until
+that is solved, a GIF of an interactive demo needs a person to touch the window
+first — which is fine for a one-off, and not reproducible enough to put in the
+capture pipeline. So those demos stay stills.
 
 `timer` is the exception, and glitter's own manifest agrees — its timer entry is
 `{:duration 10}` with no `:input` either. The demo animates by itself, so the

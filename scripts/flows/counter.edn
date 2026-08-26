@@ -1,0 +1,24 @@
+;; Drives counter.clj for docs/demos/counter.gif.
+;;
+;; :tap-by-role presses the button through the ACCESSIBILITY API (AXPress), not
+;; by synthesising a click at screen coordinates — screen-grab's own README notes
+;; that a synthetic :click moves the cursor but never actuates an in-window
+;; control in any app. AXPress does.
+;;
+;; Selector note: :role/:text/:id are the ONLY shorthand keys cgevent honours.
+;; :title looks right and is SILENTLY DROPPED, so {:role "AXButton" :title "+ 1"}
+;; matches ANY button and passes vacuously. :text checks title OR value, which is
+;; what matches a button's label here.
+[[:wait-for-quiescence 600]
+ [:tap-by-role {:role "AXButton" :text "+ 1"}]
+ [:wait-for-quiescence 350]
+ [:tap-by-role {:role "AXButton" :text "+ 1"}]
+ [:wait-for-quiescence 350]
+ [:tap-by-role {:role "AXButton" :text "+ 1"}]
+ [:wait-for-quiescence 350]
+ [:tap-by-role {:role "AXButton" :text "+ 1"}]
+ [:wait-for-quiescence 500]
+ [:tap-by-role {:role "AXButton" :text "− 1"}]
+ [:wait-for-quiescence 500]
+ [:tap-by-role {:role "AXButton" :text "reset"}]
+ [:wait-for-quiescence 800]]

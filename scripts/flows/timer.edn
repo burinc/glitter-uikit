@@ -1,0 +1,14 @@
+;; Drives timer.clj for docs/demos/timer.gif.
+;;
+;; The only flow with no interaction at all: this demo advances on its own, so
+;; the recording just needs to stay open and watch. glitter's own manifest treats
+;; its timer the same way — {:duration 10} with no :input.
+;;
+;; The tap partway through changes the duration mid-run, which is the actual
+;; 7GUIs challenge for this task: the change must take effect immediately rather
+;; than at the next tick.
+[[:wait-for-quiescence 3000]
+ [:wait-for-quiescence 3000]
+ [:tap-by-role {:role "AXButton" :text "Reset"}]
+ [:wait-for-quiescence 3000]
+ [:wait-for-quiescence 2000]]
