@@ -5,4 +5,14 @@
 ;; `clojure-lsp diagnostics` flags every genuinely-public entry point as
 ;; "unused", which is wrong for a library and makes the linter noisy rather
 ;; than a useful signal.
-{:linters {:clojure-lsp/unused-public-var {:level :off}}}
+;; Classpath discovery must NOT include the :dev alias. clojure-lsp's default
+;; for a deps.edn project is `clojure -A:test:dev -Spath`, and this repo's :dev
+;; alias exists to override glitter to :local/root "../glitter" — a sibling
+;; checkout that exists on a maintainer's machine and nowhere else. On CI that
+;; fails with `Local lib io.github.burinc/glitter not found: ../glitter`, and
+;; every clojure-lsp gate fails with it, which is exactly what happened on the
+;; first green-runner CI run. deps.edn's own :deps pins glitter by :git/sha, so
+;; dropping :dev is what makes discovery reproducible off this machine.
+{:linters {:clojure-lsp/unused-public-var {:level :off}}
+ :project-specs [{:project-path "deps.edn"
+                  :classpath-cmd ["clojure" "-A:test" "-Spath"]}]}

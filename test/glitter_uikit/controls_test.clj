@@ -174,11 +174,20 @@
   (let [c (w/create! :canvas {})
         n (fn [] (let [subs (u/layer-sublayers (u/view-layer c))]
                    (if (nil? subs) 0 (u/array-count subs))))]
-    (w/apply-props! :canvas c {:circles [{:x 50 :y 50 :r 20 :selected? false}
-                                         {:x 90 :y 70 :r 25 :selected? true}]})
+    (w/apply-props! :canvas c {:circles [{:x 50
+                                          :y 50
+                                          :r 20
+                                          :selected? false}
+                                         {:x 90
+                                          :y 70
+                                          :r 25
+                                          :selected? true}]})
     (is (= 2 (n)))
     (testing "a smaller model leaves fewer layers, not more"
-      (w/apply-props! :canvas c {:circles [{:x 10 :y 10 :r 5 :selected? false}]})
+      (w/apply-props! :canvas c {:circles [{:x 10
+                                            :y 10
+                                            :r 5
+                                            :selected? false}]})
       (is (= 1 (n))))
     (testing "an empty model clears the canvas"
       (w/apply-props! :canvas c {:circles []})
