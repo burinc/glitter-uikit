@@ -1,0 +1,12 @@
+;; Drives flights.clj for docs/demos/flights.gif.
+;;
+;; Deliberately taps only UNIQUELY-named controls. Both date fields start
+;; holding today's date, so {:role "AXTextField" :text "26.08.2026"} would match
+;; two elements, and cgevent treats an ambiguous match as an error rather than
+;; silently picking one. "Book" and "Try again" are unique; the booking round
+;; trip is the clearest thing to show anyway.
+[[:wait-for-quiescence 800]
+ [:tap-by-role {:role "AXButton" :text "Book"}]
+ [:wait-for-quiescence 1500]
+ [:tap-by-role {:role "AXButton" :text "Try again"}]
+ [:wait-for-quiescence 1200]]

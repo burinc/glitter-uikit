@@ -1,0 +1,15 @@
+;; Drives todo.clj for docs/demos/todo.gif.
+;;
+;; One text field and one "Add" button, both unique — the three checkbuttons
+;; carry no title of their own (the label is a sibling), so {:role "AXCheckBox"}
+;; would match all three ambiguously and is avoided.
+;;
+;; Adding a task is the right thing to show: the derived counts above the list
+;; are recomputed from :tasks on every render, so they move as the row appears.
+[[:wait-for-quiescence 800]
+ [:tap-by-role {:role "AXTextField"}]
+ [:wait-for-quiescence 400]
+ [:type "Record the demo GIFs"]
+ [:wait-for-quiescence 800]
+ [:tap-by-role {:role "AXButton" :text "Add"}]
+ [:wait-for-quiescence 1500]]

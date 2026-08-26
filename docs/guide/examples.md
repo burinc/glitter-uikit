@@ -19,11 +19,11 @@ never calls a GTK function. See [Limitations](limitations.md) for why.
 
 | preview | `bb` name | Task | What it demonstrates |
 |---|---|---|---|
-| [<img src="../demos/counter.png" width="150">](../demos/counter.png) | `counter` | [Counter](https://eugenkiss.github.io/7guis/tasks/#counter) | The canonical demo. One state atom, a pure `state -> hiccup` view, handlers as data. The whole model in a window you can click through in ten seconds. |
-| [<img src="../demos/temperature.png" width="150">](../demos/temperature.png) | `temperature` | [Temperature Converter](https://eugenkiss.github.io/7guis/tasks/#temp) | Two linked numeric fields, each edit updating the other. Its domain half is glitter's, carried across unchanged — the pure part of a glitter app is renderer-agnostic, which is the point of the split. |
-| [<img src="../demos/flights.png" width="150">](../demos/flights.png) | `flights` | [Flight Booker](https://eugenkiss.github.io/7guis/tasks/#flight-booker) | Constraints *between* widgets and *within* one: a `:drop-down` choosing one-way/return, two strictly-validated date fields, and a Book button gated on both. |
+| [<img src="../demos/counter.gif" width="150">](../demos/counter.gif) | `counter` | [Counter](https://eugenkiss.github.io/7guis/tasks/#counter) | The canonical demo. One state atom, a pure `state -> hiccup` view, handlers as data. The whole model in a window you can click through in ten seconds. |
+| [<img src="../demos/temperature.gif" width="150">](../demos/temperature.gif) | `temperature` | [Temperature Converter](https://eugenkiss.github.io/7guis/tasks/#temp) | Two linked numeric fields, each edit updating the other. Its domain half is glitter's, carried across unchanged — the pure part of a glitter app is renderer-agnostic, which is the point of the split. |
+| [<img src="../demos/flights.gif" width="150">](../demos/flights.gif) | `flights` | [Flight Booker](https://eugenkiss.github.io/7guis/tasks/#flight-booker) | Constraints *between* widgets and *within* one: a `:drop-down` choosing one-way/return, two strictly-validated date fields, and a Book button gated on both. |
 | [<img src="../demos/timer.gif" width="150">](../demos/timer.gif) | `timer` | [Timer](https://eugenkiss.github.io/7guis/tasks/#timer) | The only demo whose state advances **on its own** — a repeating `NSTimer` drives a `:progress-bar`, and moving the `:scale` changes the duration immediately rather than at the next tick. |
-| [<img src="../demos/todo.png" width="150">](../demos/todo.png) | `todo` | — | A task board on `glitter.nexus`: derived counts computed inline on every re-render (glitter has no reactive-derivation primitive), an entry with `:change`/`:activate`, checkbutton toggles, list rendering in a frame. |
+| [<img src="../demos/todo.gif" width="150">](../demos/todo.gif) | `todo` | — | A task board on `glitter.nexus`: derived counts computed inline on every re-render (glitter has no reactive-derivation primitive), an entry with `:change`/`:activate`, checkbutton toggles, list rendering in a frame. |
 
 7GUIs tasks 1 through 4 ship. **`crud`** (task 5) is the one still out of reach:
 it needs `:list-box`, i.e. `NSTableView`, which requires a data source and a
@@ -34,7 +34,7 @@ renderer combined, which is why it was deliberately left out.
 
 | preview | gallery |
 |---|---|
-| [<img src="../demos/widgets.png" width="170">](../demos/widgets.png) | **`bb widgets`** — every tag the renderer registers, in one window. One state key, `:level`, is read by **three widgets at once**: a `:scale` drives it while a `:progress-bar` and a `:level-bar` display it, so dragging the slider shows a single key re-rendering everything that reads it. It is also the only example that exercises `:separator` and `:scrolled`. |
+| [<img src="../demos/widgets.gif" width="170">](../demos/widgets.gif) | **`bb widgets`** — every tag the renderer registers, in one window. One state key, `:level`, is read by **three widgets at once**: a `:scale` drives it while a `:progress-bar` and a `:level-bar` display it, so dragging the slider shows a single key re-rendering everything that reads it. It is also the only example that exercises `:separator` and `:scrolled`. |
 
 ## Why the demos are worth reading, not just running
 
@@ -118,35 +118,44 @@ are the index; that page is the argument.
 | `main-thread-smoke` | A state change made from a **non-main thread** still renders on the AppKit main thread — the property the `CFRunLoopSource` scheduler exists for. |
 | `repl-live-smoke` | The same marshalling, shaped like a live nREPL session: a worker thread mutates state while the app runs. An unmarshalled render touching AppKit off-main aborts the process outright, so surviving is itself part of the assertion. |
 
-## Stills, not animations — with one real exception
+## How the recordings are made
 
-glitter records a GIF per demo by steering it with a synthetic Tab/Space/type
-`:input` timeline. That recipe does not transfer here — but **not for the reason
-first recorded on this page**, which was wrong and is corrected below.
+Every preview above is a real recording of the demo being driven. They are
+produced by `scripts/record_gifs.sh`, which drives each demo through `cgevent`'s
+**accessibility API**: `:tap-by-role` sends `AXPress` to a real control, and once
+a field is focused that way a synthetic `:type` lands in it. That is a different
+mechanism from glitter's, which steers GTK with a raw Tab/Space/type timeline —
+screen-grab's own README notes that a synthetic *click* "cannot actuate
+in-window controls in any app", which is why the accessibility route is the one
+that works here.
 
-Synthetic input *does* reach an AppKit window. `cgevent`'s `:tap-by-role`
-presses a control through the accessibility API (`AXPress`) rather than
-synthesising a click at coordinates, and once a field is focused that way a
-synthetic `:type` lands in it. Both measured: a flow drove the counter from
-0 to 3, and typing `100` into the converter produced `212`. A 21-frame GIF of
-the counter was recorded that way.
+The flows live in `scripts/flows/*.edn`, one per demo, and are worth reading
+before writing another. `:role`/`:text`/`:id` are the **only** selector shorthand
+keys cgevent honours, so `{:role "AXButton" :title "Add"}` matches *any* button
+and passes vacuously. An ambiguous match is an error, which is why
+`flights.edn` taps only uniquely-named controls — both its date fields hold
+today's date at startup.
 
-The real blocker is the accessibility **tree**. From a cold, unattended launch
-the app exposes only a recursive `AXApplication` with no `AXWindow` child, so a
-recorded flow finds no button to press. It populated only after a human had
-interacted with the window. Activating through System Events, clicking the title
-bar synthetically, and polling for thirty seconds all failed to wake it. Until
-that is solved, a GIF of an interactive demo needs a person to touch the window
-first — which is fine for a one-off, and not reproducible enough to put in the
-capture pipeline. So those demos stay stills.
+### Recording one needs a click first
 
-`timer` is the exception, and glitter's own manifest agrees — its timer entry is
-`{:duration 10}` with no `:input` either. The demo animates by itself, so the
-GIF above is a recording of the thing genuinely working, with nothing
-synthesised. It is produced by a separate manifest,
-`scripts/demo_gifs.edn`, with its own ledger and README: screen-grab keys a
-ledger entry by `:id` alone, so a `record` run and a `shot` run sharing an
-output directory overwrite each other's entries.
+`scripts/record_gifs.sh` is **not** unattended. From a cold launch the app
+exposes only a recursive `AXApplication` with no `AXWindow` child, so a flow
+finds nothing to press; the subtree populates once a person clicks the window.
+Activating through System Events, clicking the title bar synthetically, and
+polling for four minutes all failed to wake it. The script waits — printing the
+window's on-screen position — until you click, then records by itself.
+
+`timer` is the exception that needs no click, because its flow contains no taps:
+the demo advances on its own.
+
+Whether an AppKit app launched bare by Jolt — no `.app` bundle, no bundle
+identifier — *should* expose its window to accessibility before it is focused is
+an open question, and the likeliest place a fix would come from.
+
+The stills under `docs/demos/*.png` are kept alongside the GIFs and regenerate
+unattended via `screen-grab shot --manifest scripts/demo_manifest.edn`, needing
+no clicking at all. That is the CI-safe path if these ever have to be rebuilt
+without a person present.
 
 One further caveat if you touch `counter`: its committed screenshot shows
 `Count: 5` because a person clicked the button five times. That frame cannot be

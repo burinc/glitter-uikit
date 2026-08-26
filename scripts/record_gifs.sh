@@ -33,7 +33,8 @@ for d in "${demos[@]}"; do
   # measured, and the reason this loop checks for a child element rather than
   # for the window bounds it originally checked.
   pid=""
-  for _ in $(seq 1 60); do
+  waited=0
+  for _ in $(seq 1 240); do
     pid=$(ps -eo pid,comm,args | awk -v d="$d" '$2 ~ /jolt$/ && $0 ~ ("-M:" d) {print $1; exit}')
     if [ -n "$pid" ] \
        && cgevent windows --pid "$pid" 2>/dev/null | grep -q 'x[0-9]' \
@@ -41,8 +42,12 @@ for d in "${demos[@]}"; do
             | grep -qE 'AXButton "|AXTextField|AXSlider|AXCheckBox'; then
       break
     fi
+    if [ -n "$pid" ] && [ $((waited % 5)) -eq 0 ] && [ "$waited" -gt 0 ]; then
+      echo "   ... waiting for $d's accessibility tree — CLICK THE WINDOW (${waited}s)"
+    fi
     pid=""
-    curl -s -o /dev/null --max-time 1 http://127.0.0.1:9/ 2>/dev/null || true
+    sleep 1
+    waited=$((waited + 1))
   done
 
   if [ -z "$pid" ]; then echo "!! $d: window/tree never appeared"; fail=1; continue; fi

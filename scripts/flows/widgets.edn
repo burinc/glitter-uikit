@@ -1,0 +1,15 @@
+;; Drives widgets.clj for docs/demos/widgets.gif.
+;;
+;; Three text fields live here (Item, search-entry, password-entry), so a bare
+;; {:role "AXTextField"} is ambiguous and is avoided. Every control tapped below
+;; carries a unique title.
+;;
+;; "Add items in CAPITALS" then "Add" is the pair worth showing: it proves the
+;; checkbutton's state reaches the action, since the new row arrives uppercased.
+[[:wait-for-quiescence 800]
+ [:tap-by-role {:role "AXCheckBox" :text "Add items in CAPITALS"}]
+ [:wait-for-quiescence 800]
+ [:tap-by-role {:role "AXButton" :text "Clear list"}]
+ [:wait-for-quiescence 1200]
+ [:tap-by-role {:role "AXButton" :text "Add"}]
+ [:wait-for-quiescence 1500]]
