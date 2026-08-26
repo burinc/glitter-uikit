@@ -1,9 +1,9 @@
 # The examples
 
-`examples/glitter_uikit/` holds **fourteen runnable namespaces**, and every one
+`examples/glitter_uikit/` holds **fifteen runnable namespaces**, and every one
 has a `deps.edn` alias and a `bb` task. They come in two kinds:
 
-- **Six interactive demos** you open and click — the galleries below.
+- **Seven interactive demos** you open and click — the galleries below.
 - **Eight live-AppKit smokes**, each a small, complete glitter program that
   mounts a real window, asserts against real AppKit state, and exits non-zero
   on failure.
@@ -23,12 +23,30 @@ never calls a GTK function. See [Limitations](limitations.md) for why.
 | [<img src="../demos/temperature.gif" width="150">](../demos/temperature.gif) | `temperature` | [Temperature Converter](https://eugenkiss.github.io/7guis/tasks/#temp) | Two linked numeric fields, each edit updating the other. Its domain half is glitter's, carried across unchanged — the pure part of a glitter app is renderer-agnostic, which is the point of the split. |
 | [<img src="../demos/flights.gif" width="150">](../demos/flights.gif) | `flights` | [Flight Booker](https://eugenkiss.github.io/7guis/tasks/#flight-booker) | Constraints *between* widgets and *within* one: a `:drop-down` choosing one-way/return, two strictly-validated date fields, and a Book button gated on both. |
 | [<img src="../demos/timer.gif" width="150">](../demos/timer.gif) | `timer` | [Timer](https://eugenkiss.github.io/7guis/tasks/#timer) | The only demo whose state advances **on its own** — a repeating `NSTimer` drives a `:progress-bar`, and moving the `:scale` changes the duration immediately rather than at the next tick. |
+| [<img src="../demos/crud.gif" width="150">](../demos/crud.gif) | `crud` | [CRUD](https://eugenkiss.github.io/7guis/tasks/#crud) | A prefix filter, a selectable list, and Create/Update/Delete gated on selection. The spec's "separation of domain and presentation logic" is `get-people` — one pure filter-and-sort fn. The list is built from `:scrolled` + `:button` rows rather than a table widget; see below. |
 | [<img src="../demos/todo.gif" width="150">](../demos/todo.gif) | `todo` | — | A task board on `glitter.nexus`: derived counts computed inline on every re-render (glitter has no reactive-derivation primitive), an entry with `:change`/`:activate`, checkbutton toggles, list rendering in a frame. |
 
-7GUIs tasks 1 through 4 ship. **`crud`** (task 5) is the one still out of reach:
-it needs `:list-box`, i.e. `NSTableView`, which requires a data source and a
-delegate bridged through the FFI — more work than every other widget in this
-renderer combined, which is why it was deliberately left out.
+**7GUIs tasks 1 through 5 ship.** Task 5 arrived without `NSTableView`: a list
+box is functionally a scrollable column of selectable rows, so `crud` builds one
+from `:scrolled` + a `:button` per person, with the selected row marked by a
+caret in its label. Every rule the spec states is satisfied; what is missing is
+presentation — real selection highlighting, keyboard navigation, alternating row
+colours — which a table widget would give for free. When `:list-box` lands, that
+view swaps its list section and nothing else.
+
+The two remaining tasks need genuinely new capability, not a workaround:
+
+- **Circle Drawer** (task 6) wants undo/redo, free-positioned shapes, and a
+  dialog that edits the model. Undo/redo is pure state and needs nothing new,
+  but free positioning does: `NSStackView` places children in order, so circles
+  need a plain container with explicit frames, plus mouse coordinates from a
+  click, plus layer-backed views for the shapes themselves.
+- **Cells** (task 7) is a 100x26 spreadsheet with a formula language, change
+  propagation and cycle detection. 2,600 live cells is where `NSTableView`
+  stops being avoidable.
+
+glitter itself ships tasks 1-5 and no further, so neither has a reference
+implementation to port — they would be original work on both sides.
 
 ## The widget gallery
 

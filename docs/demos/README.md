@@ -36,3 +36,7 @@ A task board on glitter.nexus: derived counts computed inline, an entry, and che
 
 ![timer](timer.png)
 
+### crud
+
+![crud](crud.png)
+

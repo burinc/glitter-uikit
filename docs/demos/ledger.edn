@@ -1,5 +1,6 @@
 {
   "counter" {:sha "f8f0557bd349b7e7fe9ac686f9e5585f6b05bd7b32717676363679505ca4beef", :settings ["png"], :bytes 23471, :at "2026-08-24T22:15:32.684872Z"}
+  "crud" {:sha "bd5d1b2e1f34b637e36942ca72e2ea1287a2ccbf628c3fc654ccd0d456f68b6c", :settings ["png"], :bytes 65362, :at "2026-08-26T12:38:15.022428Z"}
   "flights" {:sha "40e09f274b4a1a8fb9acd5e0153639abf2a55f688eea0981baf04e6422898fba", :settings ["png"], :bytes 55766, :at "2026-08-26T10:28:22.732398Z"}
   "temperature" {:sha "29eadbe9e6f317bee3f29c819f94ebf1858a1ddc1be82f01accadcc535dae55c", :settings ["png"], :bytes 42896, :at "2026-08-26T10:28:22.732114Z"}
   "timer" {:sha "b36738ef17aa6d45ee084dca3ccfe720ae2a71b40134398048a014d88bcfafb0", :settings ["png"], :bytes 41793, :at "2026-08-26T10:58:07.565455Z"}

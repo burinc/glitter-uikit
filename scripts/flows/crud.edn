@@ -1,0 +1,19 @@
+;; Drives crud.clj for docs/demos/crud.gif.
+;;
+;; Row buttons carry a caret and padding in their label ("▸ Tisch, Roman" vs
+;; "   Tisch, Roman"), so :text — which compares the whole title — will not
+;; match them. :where with :contains is the documented way to match on anything
+;; the :role/:text/:id shorthand cannot express, and is what this needs.
+;;
+;; Select-then-delete is the clearest story: selecting fills the name fields and
+;; enables Update/Delete, and deleting clears the selection again, which is the
+;; behaviour that stops those buttons acting on a row that no longer exists.
+[[:wait-for-quiescence 800]
+ [:tap-by-role {:role "AXButton" :where [:contains :title "Mustermann"]}]
+ [:wait-for-quiescence 1200]
+ [:tap-by-role {:role "AXButton" :text "Delete"}]
+ [:wait-for-quiescence 1200]
+ [:tap-by-role {:role "AXButton" :where [:contains :title "Tisch"]}]
+ [:wait-for-quiescence 1200]
+ [:tap-by-role {:role "AXButton" :text "Delete"}]
+ [:wait-for-quiescence 1500]]

@@ -65,6 +65,12 @@
    :src   "examples/glitter_uikit/timer.clj"
    :description "The 7GUIs Timer — a repeating NSTimer driving a :progress-bar, with a :scale that changes the duration live."}
 
+  {:id    "crud"
+   :group "7guis"
+   :run   "jolt -M:crud"
+   :src   "examples/glitter_uikit/crud.clj"
+   :description "The 7GUIs CRUD task — a prefix filter, a selectable list, and Create/Update/Delete gated on selection."}
+
   {:id    "todo"
    :group "basics"
    :run   "jolt -M:todo"

@@ -104,6 +104,7 @@ Full topic breakdown: `docs/guide/index.md`.
 | `examples/glitter_uikit/temperature.clj` | 7GUIs Temperature Converter — two linked fields; domain logic ported unchanged from glitter |
 | `examples/glitter_uikit/flights.clj` | 7GUIs Flight Booker — `:drop-down`, validated date fields, constraint-gated Book button |
 | `examples/glitter_uikit/timer.clj` | 7GUIs Timer — repeating `NSTimer` via `widget/every!`, `:progress-bar` + live `:scale` |
+| `examples/glitter_uikit/crud.clj` | 7GUIs CRUD — prefix filter, selectable list built from `:button` rows, Create/Update/Delete |
 | `examples/glitter_uikit/todo.clj` | Task-board demo — derived counts, entry/checkbox list |
 | `examples/glitter_uikit/smoke.clj` | Basic smoke: mount a tree and run the loop without exception |
 | `examples/glitter_uikit/keyed_smoke.clj` | Keyed reorder — verifies live AppKit widget order via `glitter-uikit.widget/stack-children` (reads `arrangedSubviews`, not GTK4's `-firstChild`/`-nextSibling`) |
@@ -218,9 +219,9 @@ a view ports between renderers unchanged.
 
 Eight live-AppKit smokes (keyed reorder, child replacement/insertion, handler
 lifecycle, main-thread rendering, state-atom reactivity, nREPL live editing,
-plus the basic smoke) plus the full unit suite. Six interactive demos
-(counter, widget gallery, the 7GUIs Temperature Converter, Flight Booker and
-Timer, task board) mirroring glitter's own examples.
+plus the basic smoke) plus the full unit suite. Seven interactive demos (counter, widget gallery, the 7GUIs Temperature
+Converter, Flight Booker, Timer and CRUD, task board) mirroring glitter's own
+examples — 7GUIs tasks 1 through 5.
 
 Known v1 limitations, inherited unmodified from glimmer-uikit: `:class`
 and `:style` props are silently accepted but do nothing (AppKit has no
