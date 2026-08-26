@@ -202,7 +202,7 @@ Full provenance (which file ported from where, every documented deviation):
 
 ## Scope (shipped)
 
-The full AppKit renderer for glitter: **eighteen widget tags**.
+The full AppKit renderer for glitter: **nineteen widget tags**.
 
 v1's nine — `:window`, `:box`/`:hbox`/`:vbox`, `:button`, `:label`, `:entry`,
 `:checkbutton`, `:separator`, `:frame`, `:scrolled` — mapped to `NSWindow`,
@@ -216,6 +216,9 @@ Nine added since, sourced from the AppKit headers in the local macOS SDK:
 (`NSSecureTextField`), `:search-entry` (`NSSearchField`) and `:image`
 (`NSImageView`). Tag, prop and event names are glitter's own GTK-side ones, so
 a view ports between renderers unchanged.
+
+Plus one tag with no glitter counterpart: `:canvas` (an `NSButton` whose CALayer
+holds free-positioned shapes), added for the 7GUIs Circle Drawer.
 
 Eight live-AppKit smokes (keyed reorder, child replacement/insertion, handler
 lifecycle, main-thread rendering, state-atom reactivity, nREPL live editing,
