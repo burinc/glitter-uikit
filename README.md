@@ -160,7 +160,7 @@ map.
 accepted to keep hiccup trees portable, but they do nothing. There is no
 AppKit equivalent of GTK's `gtk_widget_add_css_class`.
 
-See `AGENTS.md` for the full event-dispatch architecture and `docs/guide/`
+See `CONTRIBUTING.md` for the full event-dispatch architecture and `docs/guide/`
 for widget-layer mechanics.
 
 ## Architecture
@@ -180,8 +180,9 @@ See `docs/guide/index.md` for the full breakdown.
 ## Documentation
 
 - **[`docs/guide/index.md`](docs/guide/index.md)** — the full guide.
-- **[`AGENTS.md`](AGENTS.md)** — canonical context for agents and tools
-  working in this repo.
+- **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — conventions, gotchas, build
+  commands and the file map. Read it before changing the widget or renderer
+  layers.
 - Design spec and implementation plan are kept in a private planning store and
   are not part of this repository.
 

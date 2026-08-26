@@ -12,7 +12,7 @@
   todo.clj's glitter.nexus machinery is deliberately absent — the subject here
   is the widgets, and nexus would be a second thing to learn at the same time.
 
-  Two gotchas this file has to respect, both documented in AGENTS.md:
+  Two gotchas this file has to respect, both documented in CONTRIBUTING.md:
 
   - :vbox / :hbox are named explicitly and never a bare :box. A bare [:box …]
     is VERTICAL under glitter.gtk but HORIZONTAL here (NSStackView's own
@@ -206,7 +206,7 @@
      ;; children; a VECTOR is read as a single element, so [[:label …]] puts a
      ;; vector in tag position. glitter.hiccup's hiccup? check then rejects it
      ;; and renders it as a stringified literal instead of throwing — the exact
-     ;; silent bug class AGENTS.md convention #1 describes. It showed up as the
+     ;; silent bug class CONTRIBUTING.md convention #1 describes. It showed up as the
      ;; raw "[[:label {:markup ...}]]" text on screen after Clear list.
      (if (empty? items)
        [:label {:markup "<span color='#888888'>List is empty — add one above.</span>"

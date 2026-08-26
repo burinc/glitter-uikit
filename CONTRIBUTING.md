@@ -1,6 +1,9 @@
-# Agent Instructions — glitter-uikit
+# Contributing to glitter-uikit
 
-This file is the canonical, tool-agnostic agent context for this project.
+The conventions, gotchas and build commands for working in this repo. Read the
+"Conventions & gotchas" section before changing the widget or renderer layers —
+several entries there are the opposite of what a GTK background would suggest,
+and each one is written down because it cost real debugging to find.
 
 ## What this is
 
@@ -197,7 +200,7 @@ Full provenance (which file ported from where, every documented deviation):
 
 9. **The glitter-core split is the standing follow-up.** Extracting a
    natives-free `glitter-core` (cross-link README's Status section) is
-   recorded in `AGENTS.md` at dispatch time as context for any future
+   recorded in `CONTRIBUTING.md` at dispatch time as context for any future
    contributor picking up that arc.
 
 ## Scope (shipped)

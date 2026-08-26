@@ -27,7 +27,7 @@
 (deftest drop-down-ignores-an-out-of-range-selection
   ;; NOT a style nit: selectItemAtIndex: with an index outside the menu raises an
   ;; ObjC exception, and an ObjC exception aborts the PROCESS here — a Clojure
-  ;; catch cannot intercept it (AGENTS.md gotcha 5). If this test ever fails it
+  ;; catch cannot intercept it (CONTRIBUTING.md gotcha 5). If this test ever fails it
   ;; will not fail, it will kill the test runner, so a green run is the assertion.
   (let [d (w/create! :drop-down {})]
     (w/apply-props! :drop-down d {:items ["a" "b"]

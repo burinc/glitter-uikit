@@ -114,7 +114,6 @@ against the previous vdom and issues the minimal set of `IRender`/
   the structure of.
 - `README.md` (repo root) — feature overview, quick start, requirements,
   and the full `jolt`/`bb` command reference.
-- `AGENTS.md` (repo root) — canonical agent context: conventions,
-  gotchas, file map, and scope.
+- `CONTRIBUTING.md` (repo root) — conventions, gotchas, file map and scope.
 - `NOTICE.md` (repo root) — the authoritative file-by-file attribution
   ledger and the Known gaps list `limitations.md` expands on.

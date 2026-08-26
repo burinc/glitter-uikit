@@ -487,7 +487,7 @@
   ;; :items is applied BEFORE :selected on purpose — selectItemAtIndex: with an
   ;; index outside the current menu raises an ObjC exception, and an ObjC
   ;; exception ABORTS the process here (a Clojure catch cannot intercept it; see
-  ;; AGENTS.md gotcha 5). Rebuilding the menu first, then bounds-checking the
+  ;; CONTRIBUTING.md gotcha 5). Rebuilding the menu first, then bounds-checking the
   ;; index against the menu that now exists, is what keeps that unreachable.
   {:ctor  (fn [_] (u/popup-new))
    :apply (fn [w p]
