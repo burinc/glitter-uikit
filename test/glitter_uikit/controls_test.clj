@@ -168,7 +168,33 @@
       (is (= before (count @w/ticks)))
       (is (not (contains? @w/ticks t))))))
 
+(deftest canvas-syncs-circle-layers
+  ;; The canvas rebuilds its layers wholesale on every render, so the assertion
+  ;; that matters is that the count TRACKS the model rather than growing.
+  (let [c (w/create! :canvas {})
+        n (fn [] (let [subs (u/layer-sublayers (u/view-layer c))]
+                   (if (nil? subs) 0 (u/array-count subs))))]
+    (w/apply-props! :canvas c {:circles [{:x 50 :y 50 :r 20 :selected? false}
+                                         {:x 90 :y 70 :r 25 :selected? true}]})
+    (is (= 2 (n)))
+    (testing "a smaller model leaves fewer layers, not more"
+      (w/apply-props! :canvas c {:circles [{:x 10 :y 10 :r 5 :selected? false}]})
+      (is (= 1 (n))))
+    (testing "an empty model clears the canvas"
+      (w/apply-props! :canvas c {:circles []})
+      (is (= 0 (n))))))
+
+(deftest canvas-click-carries-a-point
+  (testing "the [:canvas :click] value-fn is registered"
+    (is (contains? @appkit/signal-value [:canvas :click])))
+  (testing "it yields nil rather than throwing for a view with no window"
+    ;; A canvas that has not been mounted has no window, and the conversion
+    ;; needs one. Returning nil keeps an unmounted click a no-op instead of a
+    ;; null-pointer crash inside objc_msgSend.
+    (let [f (get @appkit/signal-value [:canvas :click])]
+      (is (nil? (f (w/create! :canvas {})))))))
+
 (deftest every-new-tag-is-registered
   (doseq [tag [:drop-down :scale :spin-button :progress-bar :level-bar
-               :switch :password-entry :search-entry :image]]
+               :switch :password-entry :search-entry :image :canvas]]
     (is (contains? @w/specs tag) (str tag " is in the spec registry"))))

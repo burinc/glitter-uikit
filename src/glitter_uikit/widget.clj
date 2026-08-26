@@ -617,6 +617,59 @@
                 (when-not (ffi/null? img) (u/image-view-image! w img)))))
    :container :none})
 
+(defn- sel-bordered [] (u/sel "setBordered:"))
+
+(defn- sync-circles!
+  "Rebuild the canvas's circle layers from `circles`.
+
+  Wholesale rebuild rather than a diff: a handful of circles per render is
+  nothing next to a re-render, and a diff would need stable per-circle identity
+  that the model does not carry. If this ever holds hundreds, revisit.
+
+  Each circle is {:x :y :r :selected?} in the canvas's own coordinate space. A
+  layer whose corner radius is half its side IS a circle — no drawing code, no
+  custom NSView subclass, and no hit-testing participation."
+  [canvas circles]
+  (let [root (u/view-layer canvas)]
+    (when-not (ffi/null? root)
+      ;; Copy the sublayer list before mutating it: removing from a live NSArray
+      ;; while iterating it is the classic way to skip every second element.
+      (let [subs (u/layer-sublayers root)
+            n    (if (ffi/null? subs) 0 (u/array-count subs))
+            olds (mapv (fn [i] (u/array-get subs i)) (range n))]
+        (run! u/layer-remove! olds))
+      (doseq [{:keys [x y r selected?]} circles]
+        (let [l (u/layer-new)
+              d (* 2.0 (double r))]
+          (u/layer-frame! l (- (double x) r) (- (double y) r) d d)
+          (u/layer-corner-radius! l (double r))
+          (u/layer-border-width! l 2.0)
+          (u/layer-border-color! l (u/cg-color (u/ns-color-rgba 0.85 0.87 0.9 1.0)))
+          (u/layer-background! l (u/cg-color (if selected?
+                                               (u/ns-color-rgba 0.55 0.6 0.7 0.9)
+                                               (u/ns-color-rgba 1.0 1.0 1.0 0.12))))
+          (u/layer-add! root l))))))
+
+(defn- canvas-spec []
+  ;; An NSButton, not a bare NSView, because a canvas has to receive clicks and
+  ;; only an NSControl has the target/action slot this renderer routes events
+  ;; through. Bordered off and a flat layer background make it read as a panel.
+  ;;
+  ;; The circles are LAYERS. That is the load-bearing choice: a CALayer takes no
+  ;; part in hit-testing, so a click lands on the canvas even where a circle sits
+  ;; under the pointer. Sub-VIEWS would swallow it, and each would then need its
+  ;; own custom hitTest: to opt out.
+  {:ctor  (fn [_]
+            (let [b (u/button-new "")]
+              (u/objc-msg-send-1intvoid b (sel-bordered) 0)
+              (u/view-wants-layer! b)
+              (u/layer-background! (u/view-layer b)
+                                   (u/cg-color (u/ns-color-rgba 0.11 0.12 0.14 1.0)))
+              b))
+   :apply (fn [w p]
+            (when (contains? p :circles) (sync-circles! w (:circles p))))
+   :container :none})
+
 (defn- scrolled-spec []
   ;; A single-document viewport. The document is pinned to the clip view at LOW
   ;; priority so it scrolls inside the allotted area instead of forcing the
@@ -643,6 +696,7 @@
          :password-entry (password-entry-spec)
          :search-entry   (search-entry-spec)
          :image          (image-spec)
+         :canvas         (canvas-spec)
          :frame       (frame-spec)
          :scrolled    (scrolled-spec)}))
 
@@ -666,8 +720,9 @@
 ;; :valign are recorded so the PARENT stack's alignment can be derived at append
 ;; time (NSStackView alignment is a stack-wide property, not per-view).
 (def ^:private alignments (atom {}))    ; view -> [halign valign]
-;; Views that already carry a width constraint, so a re-render does not stack a
-;; second one on top of the first.
+;; [view :w] / [view :h] pairs already constrained, so a re-render does not
+;; stack a second constraint on top of the first. Keyed by AXIS as well as view
+;; because a canvas needs both and one must not mask the other.
 (def ^:private sized (atom #{}))
 
 (defn- ->stack-alignment
@@ -711,9 +766,13 @@
   ;; Applied once per view: a constraint is cumulative, so re-adding it on every
   ;; re-render would pile up conflicting constraints on the same view.
   (when-let [w (:width-request props)]
-    (when-not (contains? @sized widget)
-      (swap! sized conj widget)
+    (when-not (contains? @sized [widget :w])
+      (swap! sized conj [widget :w])
       (u/set-width! widget (double w))))
+  (when-let [h (:height-request props)]
+    (when-not (contains? @sized [widget :h])
+      (swap! sized conj [widget :h])
+      (u/set-height! widget (double h))))
   (when (or (contains? props :halign) (contains? props :valign))
     (swap! alignments assoc widget [(:halign props) (:valign props)])))
 

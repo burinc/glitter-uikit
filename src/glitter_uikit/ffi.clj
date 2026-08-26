@@ -294,6 +294,15 @@
   (objc-msg-send-1pvoid v (sel "addConstraint:")
                         (constraint v ATTR-WIDTH ffi/null ATTR-NOT-AN-ATTRIBUTE 1.0 points)))
 
+(defn set-height!
+  "The vertical twin of set-width!. Needed by anything that must reserve space
+  it does not fill with intrinsic content — a :canvas has no content at all, so
+  without a height it collapses to nothing."
+  [v points]
+  (set-translates-autoresizing! v false)
+  (objc-msg-send-1pvoid v (sel "addConstraint:")
+                        (constraint v ATTR-HEIGHT ffi/null ATTR-NOT-AN-ATTRIBUTE 1.0 points)))
+
 (defn pin-low!
   "Pin `child` to `parent` at low priority — the child's intrinsic size wins
   when larger, so it can scroll. For a scroll view's document view."
@@ -539,6 +548,92 @@
   [a key value start len]
   (objc-msg-send-2p2i64void a (sel "addAttribute:value:range:") (nsstring key) value start len))
 (defn attributed-length [a] (objc-msg-send-0i64 a (sel "length")))
+
+;; --- CGPoint: struct-by-value message sends ----------------------------------
+;; objc_msgSend returning a CGPoint cannot use any of the scalar variants above:
+;; a two-double struct comes back in d0/d1, so it needs a real aggregate return
+;; type. Jolt's FFI supports that — [:by-value [:struct ...]] as both an argument
+;; and a return — with the convention that a by-value RETURN is written into a
+;; caller-supplied buffer passed as the FIRST argument, and a by-value ARGUMENT
+;; is passed as a pointer to a filled buffer.
+;;
+;; Verified live before any of this was built on: +[NSEvent mouseLocation]
+;; returned a plausible screen point (61.0, 336.3).
+;; The descriptor must be a LITERAL here: ffi/layout is a macro over literal
+;; signature data and rejects a var reference ("layout descriptor must be
+;; [:struct [[field type] ...]], got point-struct"). Jolt's own aggregate test
+;; keeps its descriptors inline for the same reason.
+(def point-layout (ffi/layout [:struct [[:x :double] [:y :double]]]))
+
+(ffi/defcfn objc-msg-send-0point "objc_msgSend"
+  [:pointer :pointer] [:by-value [:struct [[:x :double] [:y :double]]]])
+(ffi/defcfn objc-msg-send-1point-point "objc_msgSend"
+  [:pointer :pointer [:by-value [:struct [[:x :double] [:y :double]]]]]
+  [:by-value [:struct [[:x :double] [:y :double]]]])
+(ffi/defcfn objc-msg-send-1point1p-point "objc_msgSend"
+  [:pointer :pointer [:by-value [:struct [[:x :double] [:y :double]]]] :pointer]
+  [:by-value [:struct [[:x :double] [:y :double]]]])
+
+(defn alloc-point [] (ffi/alloc (ffi/layout-size point-layout)))
+(defn point-x [buf] (ffi/read-field buf point-layout :x))
+(defn point-y [buf] (ffi/read-field buf point-layout :y))
+(defn point-set! [buf x y]
+  (ffi/write-field buf point-layout :x (double x))
+  (ffi/write-field buf point-layout :y (double y))
+  buf)
+
+(defn mouse-location
+  "The pointer's CURRENT position in screen coordinates, as [x y].
+
+  Read fresh rather than taken from an event: an NSButton's action carries no
+  event, and the pointer has not moved between the click and the handler running
+  on the same run-loop turn."
+  []
+  (let [out (alloc-point)]
+    (try
+      (objc-msg-send-0point out (cls "NSEvent") (sel "mouseLocation"))
+      [(point-x out) (point-y out)]
+      (finally (ffi/free out)))))
+
+(defn screen->view
+  "Convert a screen point to `view`'s own coordinate space, as [x y].
+
+  Two hops, because AppKit offers no direct one: screen -> window via
+  -convertPointFromScreen:, then window -> view via -convertPoint:fromView: with
+  a nil source view (which means \"window coordinates\")."
+  [view window x y]
+  (let [in (alloc-point) mid (alloc-point) out (alloc-point)]
+    (try
+      (point-set! in x y)
+      (objc-msg-send-1point-point mid window (sel "convertPointFromScreen:") in)
+      (let [in2 (point-set! (alloc-point) (point-x mid) (point-y mid))]
+        (try
+          (objc-msg-send-1point1p-point out view (sel "convertPoint:fromView:") in2 ffi/null)
+          [(point-x out) (point-y out)]
+          (finally (ffi/free in2))))
+      (finally (ffi/free in) (ffi/free mid) (ffi/free out)))))
+
+;; --- CALayer (free-positioned shapes) ----------------------------------------
+;; Circles are LAYERS, not views, and that is the load-bearing choice: a CALayer
+;; takes no part in hit-testing, so a transparent button covering the canvas
+;; receives every click even where a circle sits on top. Sub-VIEWS would swallow
+;; those clicks and each would need its own custom hitTest: to opt out.
+(defn view-wants-layer! [v] (objc-msg-send-1intvoid v (sel "setWantsLayer:") 1))
+(defn view-layer [v] (objc-msg-send-0 v (sel "layer")))
+(defn layer-new [] (objc-msg-send-0 (cls "CALayer") (sel "layer")))
+(defn layer-add! [parent child] (objc-msg-send-1pvoid parent (sel "addSublayer:") child))
+(defn layer-remove! [l] (objc-msg-send-0void l (sel "removeFromSuperlayer")))
+(defn layer-sublayers [l] (objc-msg-send-0 l (sel "sublayers")))
+(defn layer-frame! [l x y w h] (objc-msg-send-4dvoid l (sel "setFrame:") (double x) (double y) (double w) (double h)))
+(defn layer-corner-radius! [l r] (objc-msg-send-1dvoid l (sel "setCornerRadius:") (double r)))
+(defn layer-border-width! [l w] (objc-msg-send-1dvoid l (sel "setBorderWidth:") (double w)))
+(defn layer-border-color! [l cg] (objc-msg-send-1pvoid l (sel "setBorderColor:") cg))
+(defn layer-background! [l cg] (objc-msg-send-1pvoid l (sel "setBackgroundColor:") cg))
+;; CALayer wants a CGColorRef, not an NSColor — -CGColor bridges the two.
+(defn ns-color-rgba [r g b a]
+  (objc-msg-send-4d (cls "NSColor") (sel "colorWithSRGBRed:green:blue:alpha:")
+                    (double r) (double g) (double b) (double a)))
+(defn cg-color [nscolor] (objc-msg-send-0 nscolor (sel "CGColor")))
 
 ;; --- NSTimer / NSRunLoop ----------------------------------------------------
 (defn timer-after!

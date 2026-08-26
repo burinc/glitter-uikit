@@ -101,7 +101,19 @@
          [:search-entry :change]       (fn [view] (u/control-string view))
          [:search-entry :activate]     (fn [view] (u/control-string view))
          [:password-entry :change]     (fn [view] (u/control-string view))
-         [:password-entry :activate]   (fn [view] (u/control-string view))}))
+         [:password-entry :activate]   (fn [view] (u/control-string view))
+         ;; The canvas reports WHERE it was clicked, in its own coordinate
+         ;; space. An NSButton's action carries no event, so the pointer's
+         ;; current position is read fresh — it has not moved between the click
+         ;; and this handler running on the same run-loop turn.
+         [:canvas :click]
+         (fn [view]
+           (let [win (u/objc-msg-send-0 view (u/sel "window"))]
+             (when-not (ffi/null? win)
+               (let [[sx sy] (u/mouse-location)
+                     [x y]   (u/screen->view view win sx sy)]
+                 {:x x
+                  :y y}))))}))
 
 (defn register-signal-value!
   "Teach the renderer to extract a value for `event` on views of type `tag`.

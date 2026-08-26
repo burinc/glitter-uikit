@@ -1,9 +1,9 @@
 # The examples
 
-`examples/glitter_uikit/` holds **fifteen runnable namespaces**, and every one
+`examples/glitter_uikit/` holds **sixteen runnable namespaces**, and every one
 has a `deps.edn` alias and a `bb` task. They come in two kinds:
 
-- **Seven interactive demos** you open and click — the galleries below.
+- **Eight interactive demos** you open and click — the galleries below.
 - **Eight live-AppKit smokes**, each a small, complete glitter program that
   mounts a real window, asserts against real AppKit state, and exits non-zero
   on failure.
@@ -24,6 +24,7 @@ never calls a GTK function. See [Limitations](limitations.md) for why.
 | [<img src="../demos/flights.gif" width="150">](../demos/flights.gif) | `flights` | [Flight Booker](https://eugenkiss.github.io/7guis/tasks/#flight-booker) | Constraints *between* widgets and *within* one: a `:drop-down` choosing one-way/return, two strictly-validated date fields, and a Book button gated on both. |
 | [<img src="../demos/timer.gif" width="150">](../demos/timer.gif) | `timer` | [Timer](https://eugenkiss.github.io/7guis/tasks/#timer) | The only demo whose state advances **on its own** — a repeating `NSTimer` drives a `:progress-bar`, and moving the `:scale` changes the duration immediately rather than at the next tick. |
 | [<img src="../demos/crud.gif" width="150">](../demos/crud.gif) | `crud` | [CRUD](https://eugenkiss.github.io/7guis/tasks/#crud) | A prefix filter, a selectable list, and Create/Update/Delete gated on selection. The spec's "separation of domain and presentation logic" is `get-people` — one pure filter-and-sort fn. The list is built from `:scrolled` + `:button` rows rather than a table widget; see below. |
+| [<img src="../demos/circles.png" width="150">](../demos/circles.png) | `circles` | [Circle Drawer](https://eugenkiss.github.io/7guis/tasks/#circle-drawer) | Click to place a circle, click one to select it, adjust its diameter live, undo and redo. Circles are `CALayer`s, not views — a layer takes no part in hit-testing, so a click reaches the canvas even under a circle and hit-testing stays a pure function over the model. |
 | [<img src="../demos/todo.gif" width="150">](../demos/todo.gif) | `todo` | — | A task board on `glitter.nexus`: derived counts computed inline on every re-render (glitter has no reactive-derivation primitive), an entry with `:change`/`:activate`, checkbutton toggles, list rendering in a frame. |
 
 **7GUIs tasks 1 through 5 ship.** Task 5 arrived without `NSTableView`: a list
@@ -34,19 +35,20 @@ presentation — real selection highlighting, keyboard navigation, alternating r
 colours — which a table widget would give for free. When `:list-box` lands, that
 view swaps its list section and nothing else.
 
-The two remaining tasks need genuinely new capability, not a workaround:
+**Task 6 needed two things this renderer did not have**, and both are now in
+it. Mouse coordinates: `+[NSEvent mouseLocation]` returns a `CGPoint`, a struct,
+which no scalar message-send can carry — Jolt's FFI does support aggregate
+returns, so `ffi.clj` gained struct-by-value sends and a screen→window→view
+conversion. And free positioning: `NSStackView` places children in order, so the
+`:canvas` tag is an `NSButton` (it must receive clicks) whose **layer** holds the
+circles.
 
-- **Circle Drawer** (task 6) wants undo/redo, free-positioned shapes, and a
-  dialog that edits the model. Undo/redo is pure state and needs nothing new,
-  but free positioning does: `NSStackView` places children in order, so circles
-  need a plain container with explicit frames, plus mouse coordinates from a
-  click, plus layer-backed views for the shapes themselves.
-- **Cells** (task 7) is a 100x26 spreadsheet with a formula language, change
-  propagation and cycle detection. 2,600 live cells is where `NSTableView`
-  stops being avoidable.
+**Cells** (task 7) remains out of reach: a 100×26 spreadsheet with a formula
+language, change propagation and cycle detection. 2,600 live cells is where
+`NSTableView` stops being avoidable.
 
-glitter itself ships tasks 1-5 and no further, so neither has a reference
-implementation to port — they would be original work on both sides.
+glitter itself ships tasks 1-5 and no further, so `circles` had no reference to
+port — its model and its rendering are both original here.
 
 ## The widget gallery
 

@@ -71,6 +71,17 @@
    :src   "examples/glitter_uikit/crud.clj"
    :description "The 7GUIs CRUD task — a prefix filter, a selectable list, and Create/Update/Delete gated on selection."}
 
+  ;; HAND-STEERED, like counter: the canvas starts EMPTY, so an unsteered
+  ;; capture shows a blank panel and nothing about the task. The committed frame
+  ;; has four circles and one selected, placed by real clicks. A re-run leaves it
+  ;; alone (the ledger hashes :src), but --force or an edit to circles.clj would
+  ;; replace it with the empty canvas.
+  {:id    "circles"
+   :group "7guis"
+   :run   "jolt -M:circles"
+   :src   "examples/glitter_uikit/circles.clj"
+   :description "The 7GUIs Circle Drawer — click to place, click to select, adjust the diameter live, undo and redo."}
+
   {:id    "todo"
    :group "basics"
    :run   "jolt -M:todo"

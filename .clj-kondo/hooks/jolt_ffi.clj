@@ -56,6 +56,18 @@
   #{:int :uint :long :ulong :short :ushort :byte :ubyte :float :double
     :int64 :char :size_t :size-t :pointer})
 
+;; CORRECTION (Circle Drawer arc): a by-value AGGREGATE return
+;; (`[:by-value [:struct ...]]`, used by the CGPoint-returning objc_msgSend
+;; bindings) takes an extra FIRST argument at the call site — jolt writes the
+;; returned struct into a caller-supplied buffer, the convention its own
+;; aggregate test uses: a fn declared with 3 argument types is called with 4.
+;; Without this, every such call false-positived as "called with N+1 args but
+;; expects N", which is an ERROR not a warning, so it broke the lint gate.
+(defn- by-value-return?
+  [ret]
+  (let [k (when ret (api/sexpr ret))]
+    (and (vector? k) (= :by-value (first k)))))
+
 (defn- ret-node
   "A literal whose inferred type matches the declared C return type."
   [ret]
@@ -71,8 +83,12 @@
     ;; Only rewrite the shape we understand; anything else falls through to
     ;; the default analysis rather than silently interning a wrong var.
     (if (and name-node arg-types (api/vector-node? arg-types))
-      (let [params (map-indexed (fn [i _] (api/token-node (symbol (str "_arg" i))))
-                                (:children arg-types))
+      (let [declared (map-indexed (fn [i _] (api/token-node (symbol (str "_arg" i))))
+                                  (:children arg-types))
+            ;; the implicit output buffer, for an aggregate return only
+            params (if (by-value-return? ret)
+                     (cons (api/token-node '_out) declared)
+                     declared)
             expanded (api/list-node
                       [(api/token-node 'clojure.core/defn)
                        name-node
