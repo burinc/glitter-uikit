@@ -9,10 +9,24 @@ name: CI
 # earlier version of this workflow ran on ubuntu-latest and would have failed
 # the first time anyone dispatched it — it never did, so nothing surfaced it.
 #
+# TWO JOBS, split on what each gate actually needs:
+#
+#   lint   ubuntu-latest   clj-kondo only. Pure static analysis over src/test/
+#                          examples — no classpath, no jolt, no GTK, no AppKit.
+#                          Runs in seconds and needs none of the install steps
+#                          below, which is the point: it still catches lint drift
+#                          when macOS runners are unavailable, as they are now.
+#
+#   test   macos-latest    the unit suite plus the two clojure-lsp gates.
+#                          The suite constructs real AppKit views (w/create! at
+#                          26 call sites across appkit_test, container_test and
+#                          controls_test) and AppKit does not exist on Linux;
+#                          clojure-lsp's format and clean-ns need a resolved
+#                          classpath, so both belong on the same machine.
+#
 # Scope: HEADLESS ONLY. The eight live-AppKit smokes (`bb smokes`) open real
 # windows and need a GUI session, so they stay a local/maintainer gate — see
-# CONTRIBUTING.md. What CI proves is that the unit suite passes and the tree is
-# lint-, format- and ns-clean on a machine that is not the maintainer's.
+# CONTRIBUTING.md.
 # ---------------------------------------------------------------------------
 
 # MANUAL TRIGGER ONLY, and currently it cannot run at all.
@@ -50,8 +64,34 @@ permissions:
   contents: read
 
 jobs:
-  gates:
-    name: test · lint · format
+  lint:
+    name: clj-kondo
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # No jolt and no GTK here on purpose. clj-kondo reads source; it does not
+      # resolve dependencies or load a single native library, so this job stays
+      # fast and has no reason to fail for environment reasons.
+      - uses: DeLaGuardo/setup-clojure@13.6.1
+        with:
+          clj-kondo: "2026.05.25"
+
+      # `.clj-kondo/hooks/jolt_ffi.clj` rewrites jolt.ffi/defcfn into an
+      # equivalent defn so clj-kondo can see through the FFI macro. Without it
+      # every objc-msg-send-* binding reports as unresolved. The hook also
+      # models by-value aggregate returns, which take an implicit output buffer
+      # as their first argument.
+      #
+      # Errors only — the SAME invocation bb hooks:install writes into the
+      # pre-commit hook, so CI and a clean local commit agree. bb lint:strict
+      # would additionally fail on warnings and would disagree with the hook.
+      - name: clj-kondo
+        run: clj-kondo --lint src test examples
+
+  test:
+    name: test · format · ns
     runs-on: macos-latest
 
     steps:
@@ -114,18 +154,6 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           fi
           exit "$rc"
-
-      # `.clj-kondo/hooks/jolt_ffi.clj` rewrites jolt.ffi/defcfn into an
-      # equivalent defn so clj-kondo can see through the FFI macro. Without it
-      # every objc-msg-send-* binding reports as unresolved. The hook also
-      # models by-value aggregate returns, which take an implicit output buffer
-      # as their first argument.
-      #
-      # Matches the pre-commit hook's gate (`clj-kondo --lint src test examples`,
-      # errors only) rather than bb lint:strict, so CI and a clean local commit
-      # agree. lint:strict additionally fails on warnings.
-      - name: clj-kondo
-        run: clj-kondo --lint src test examples
 
       # Formatting is owned by clojure-lsp, not cljfmt.
       - name: Formatting
