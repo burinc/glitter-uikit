@@ -15,11 +15,23 @@ name: CI
 # lint-, format- and ns-clean on a machine that is not the maintainer's.
 # ---------------------------------------------------------------------------
 
-# MANUAL TRIGGER ONLY, deliberately. This account's Actions are blocked at the
-# billing level ("The job was not started because recent account payments have
-# failed or your spending limit needs to be increased"), so an automatic
-# pull_request/push trigger would put a red X on every commit and mail a failure
-# for each one — which reads as a broken project to anyone visiting.
+# MANUAL TRIGGER ONLY, and currently it cannot run at all.
+#
+# This account's Actions are blocked at the billing level: the first
+# push-triggered run failed in 3s with "The job was not started because recent
+# account payments have failed or your spending limit needs to be increased".
+# Making the repo public did not lift it. Measured 2026-08-27:
+#
+#   this workflow (macos-latest)   startup_failure, immediately
+#   a 7-line echo (ubuntu-latest)  queued indefinitely, never assigned a runner
+#
+# Neither ran. The generic "workflow file issue" GitHub shows for the first is
+# NOT a YAML problem — the workflow registers as active, and the minimal ubuntu
+# probe rules the file out as the cause.
+#
+# So an automatic pull_request/push trigger would put a red X on every commit
+# and mail a failure for each one, which reads as a broken project to anyone
+# visiting. Manual-only until billing is resolved.
 #
 # Re-enabling is a three-line edit once billing allows it:
 #   pull_request: {branches: [main]}
