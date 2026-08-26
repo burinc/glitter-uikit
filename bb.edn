@@ -332,7 +332,8 @@
 
                                (hit? ["404" "not found" "nosuchbucket"])
                                (do (println (str "  SKIPPED - s3://" bucket " does not exist."))
-                                   (println "  THIS is the one that needs infrastructure. Run once in the infra repo:")
+                                   (println "  THIS is the one that needs infrastructure. Run once in the")
+                                   (println "  infra repo that owns this account's buckets and distributions:")
                                    (println "    bb render lock tofu:init tofu:plan tofu:apply -- static-site glitter-uikit")
                                    :missing-bucket)
 
