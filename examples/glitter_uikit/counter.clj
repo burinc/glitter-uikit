@@ -7,7 +7,7 @@
   function of it; and click handlers are DATA (:on {:click [[:action/dec]]})
   dispatched through a single global handler, never closures.
 
-  This file mirrors glitter's examples/glitter/counter.clj's view shape
+  This file mirrors glitter's own examples/glitter/counter.clj view shape
   and state model exactly — same actions, same dispatch — but is NOT
   byte-identical apart from requires: it uses :vbox/:hbox where glitter's
   original uses bare :box for both. That is not stylistic — a bare [:box …]

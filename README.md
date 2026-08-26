@@ -181,10 +181,9 @@ See `docs/guide/index.md` for the full breakdown.
 
 - **[`docs/guide/index.md`](docs/guide/index.md)** — the full guide.
 - **[`AGENTS.md`](AGENTS.md)** — canonical context for agents and tools
-  working in this repo. `CLAUDE.md` imports it.
-- Design spec / implementation plan: not included in this repo — they live
-  at `a private planning store` (the centralized
-  superpowers planning store) for anyone with access to that store.
+  working in this repo.
+- Design spec and implementation plan are kept in a private planning store and
+  are not part of this repository.
 
 ## Status
 

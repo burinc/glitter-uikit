@@ -126,7 +126,7 @@ deliberate.
 rotated 90° under this renderer — silently, no error, no warning.
 `:hbox`/`:vbox` are unaffected and portable either way; this project's
 own `counter.clj` demo notes in its docstring that it deliberately uses
-`:vbox`/`:hbox` rather than mirroring `glitter's examples/glitter/counter.clj`'s
+`:vbox`/`:hbox` rather than mirroring glitter's own `examples/glitter/counter.clj`
 bare `:box` usage, for exactly this reason.
 
 **Why left as-is:** matching `glitter.gtk`'s default here would itself be

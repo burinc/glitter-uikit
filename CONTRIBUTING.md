@@ -1,7 +1,6 @@
 # Agent Instructions — glitter-uikit
 
 This file is the canonical, tool-agnostic agent context for this project.
-`CLAUDE.md` imports it.
 
 ## What this is
 

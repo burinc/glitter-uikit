@@ -82,7 +82,7 @@ glitter and b12n-rljlt — see glitter-gl's own NOTICE.md.
 
 ## Bucket 3: new code (glitter-uikit-specific)
 
-- `NOTICE.md`, `AGENTS.md`, `CLAUDE.md` — this repository's documentation
+- `NOTICE.md`, `AGENTS.md` — this repository's documentation
 - `docs/guide/` — architecture and design decision documentation
 - `examples/glitter_uikit/counter.clj`, `todo.clj` — state models rewritten
   (one top-level state atom, plain derived values, action data instead of
