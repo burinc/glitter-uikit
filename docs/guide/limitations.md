@@ -280,6 +280,56 @@ upstream and carried forward deliberately rather than fixed opportunistically:
 the real fix is decoding entities *before* `parse-attrs` runs, which is
 its own scoped task, not a one-line patch to `color-hex`.
 
+## Sizing: `:width-chars` is not a width, `:width-request` is
+
+`:width-chars` / `:max-width-chars` route to `setPreferredMaxLayoutWidth:`,
+which is a text-**wrapping** hint. It does not stop a control from being
+compressed. The measured consequences were not subtle: an `:entry` beside a
+label in a stack was squeezed to **zero width** and the field vanished
+entirely, and where it survived, a ten-character date rendered as `26.08.20`.
+
+Four plausible-looking routes were each tried against a live window and each
+did nothing:
+
+| attempt | result |
+|---|---|
+| `:vexpand false` on the container | no effect |
+| `:hexpand true` on the field | no effect |
+| `:hexpand true` on the row | no effect |
+| `:halign :fill` → `NSLayoutAttributeWidth` | no effect |
+
+What works is `:width-request`, which installs a real `NSLayoutConstraint`
+(`width == constant`) via `ffi.clj`'s `set-width!`. Use it whenever a control
+must be a given size. It is applied once per view and guarded, because
+constraints are cumulative — re-adding one on every re-render would stack
+conflicting constraints on the same view.
+
+`:halign :fill` is still mapped, since `NSLayoutAttributeWidth` is the correct
+attribute for a vertical stack, but it did **not** fix the narrow-row case and
+whatever governs that is unresolved. Treat it as available-but-unproven.
+
+## Props accepted and ignored on the post-v1 controls
+
+These exist so a glitter view ports across renderers unchanged, but AppKit has
+no counterpart for them. They are listed rather than silently dropped:
+
+| tag | ignored props | why |
+|---|---|---|
+| `:scale` | `:step`, `:digits`, `:draw-value` | `NSSlider` is continuous, draws no value label, and quantises only through tick marks. Use `:ticks` / `:ticks-only` instead. |
+| `:progress-bar` | `:show-text`, `:text` | `NSProgressIndicator` draws no text. Pair it with a `:label`. |
+| `:spin-button` | `:digits` | An `NSStepper` is only the arrows — unlike `GtkSpinButton` it has no built-in text field, so pair it with a `:label` or `:entry`. |
+| `:password-entry` | `:show-peek-icon` | No AppKit counterpart. |
+| `:search-entry` | `:search-delay` | `NSSearchField` sends its action as you type. |
+| `:image` | `:pixel-size` | Size it with `:width-request` or the surrounding layout. |
+
+## `:switch` needs macOS 10.15, unlike every other tag
+
+`NSSwitch` is `API_AVAILABLE(macos(10.15))` — verified in the SDK header, not
+assumed. Every other tag works on the project's 10.13 floor. The spec's `:ctor`
+throws a named error when the class is absent rather than letting a null class
+crash inside `objc_msgSend` with nothing pointing at the cause, so an older
+system gets a clear message about that one tag instead of an opaque abort.
+
 ## Two gaps that are about verification, not behavior
 
 The rest of this page is about what the code actually does. These two

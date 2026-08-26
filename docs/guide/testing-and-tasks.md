@@ -90,8 +90,8 @@ landed."*
 
 ## Interactive demos
 
-`jolt counter`, `jolt widgets`, `jolt temperature` and `jolt todo` are the
-four demos meant to be run and clicked, not asserted on — `counter.clj` is the canonical
+`jolt counter`, `jolt widgets`, `jolt temperature`, `jolt flights` and
+`jolt todo` are the five demos meant to be run and clicked, not asserted on — `counter.clj` is the canonical
 Replicant-style counter (data-driven `:on {:click [[:action/dec]]}`
 dispatch, all state in one top-level atom), and `todo.clj` is a larger
 task-board demo built on `glitter.nexus` (action-expansions, an

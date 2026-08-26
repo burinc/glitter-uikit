@@ -102,6 +102,7 @@ Full topic breakdown: `docs/guide/index.md`.
 | `examples/glitter_uikit/counter.clj` | Counter demo — state atom + view function + action dispatch |
 | `examples/glitter_uikit/widgets.clj` | Widget-gallery demo — every registered tag in one window; the only example that uses `:separator` or `:scrolled` |
 | `examples/glitter_uikit/temperature.clj` | 7GUIs Temperature Converter — two linked fields; domain logic ported unchanged from glitter |
+| `examples/glitter_uikit/flights.clj` | 7GUIs Flight Booker — `:drop-down`, validated date fields, constraint-gated Book button |
 | `examples/glitter_uikit/todo.clj` | Task-board demo — derived counts, entry/checkbox list |
 | `examples/glitter_uikit/smoke.clj` | Basic smoke: mount a tree and run the loop without exception |
 | `examples/glitter_uikit/keyed_smoke.clj` | Keyed reorder — verifies live AppKit widget order via `glitter-uikit.widget/stack-children` (reads `arrangedSubviews`, not GTK4's `-firstChild`/`-nextSibling`) |
@@ -199,16 +200,26 @@ Full provenance (which file ported from where, every documented deviation):
 
 ## Scope (shipped)
 
-The full AppKit renderer for glitter: nine widget tags (`:window`,
-`:box`/`:hbox`/`:vbox`, `:button`, `:label`, `:entry`, `:checkbutton`,
-`:separator`, `:frame`, `:scrolled`), mapped to their AppKit equivalents
-(`NSWindow`, `NSStackView`, `NSButton`, `NSTextField` in various styles,
-`NSBox`, `NSScrollView`). Eight live-AppKit smokes (keyed reorder, child
-replacement/insertion, handler lifecycle, main-thread rendering,
-state-atom reactivity, nREPL live editing, plus the basic smoke) plus the
-full unit suite. Four interactive demos (counter, widget gallery, the 7GUIs
-Temperature Converter, task board) mirroring
-glitter's own examples.
+The full AppKit renderer for glitter: **eighteen widget tags**.
+
+v1's nine — `:window`, `:box`/`:hbox`/`:vbox`, `:button`, `:label`, `:entry`,
+`:checkbutton`, `:separator`, `:frame`, `:scrolled` — mapped to `NSWindow`,
+`NSStackView`, `NSButton`, `NSTextField` in various styles, `NSBox` and
+`NSScrollView`.
+
+Nine added since, sourced from the AppKit headers in the local macOS SDK:
+`:drop-down` (`NSPopUpButton`), `:scale` (`NSSlider`), `:spin-button`
+(`NSStepper`), `:progress-bar` (`NSProgressIndicator`), `:level-bar`
+(`NSLevelIndicator`), `:switch` (`NSSwitch`), `:password-entry`
+(`NSSecureTextField`), `:search-entry` (`NSSearchField`) and `:image`
+(`NSImageView`). Tag, prop and event names are glitter's own GTK-side ones, so
+a view ports between renderers unchanged.
+
+Eight live-AppKit smokes (keyed reorder, child replacement/insertion, handler
+lifecycle, main-thread rendering, state-atom reactivity, nREPL live editing,
+plus the basic smoke) plus the full unit suite. Five interactive demos
+(counter, widget gallery, the 7GUIs Temperature Converter, the 7GUIs Flight
+Booker, task board) mirroring glitter's own examples.
 
 Known v1 limitations, inherited unmodified from glimmer-uikit: `:class`
 and `:style` props are silently accepted but do nothing (AppKit has no

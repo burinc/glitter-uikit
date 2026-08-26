@@ -1,9 +1,9 @@
 # The examples
 
-`examples/glitter_uikit/` holds **twelve runnable namespaces**, and every one
+`examples/glitter_uikit/` holds **thirteen runnable namespaces**, and every one
 has a `deps.edn` alias and a `bb` task. They come in two kinds:
 
-- **Four interactive demos** you open and click — the gallery below.
+- **Five interactive demos** you open and click — the gallery below.
 - **Eight live-AppKit smokes**, each a small, complete glitter program that
   mounts a real window, asserts against real AppKit state, and exits
   non-zero on failure.
@@ -22,6 +22,7 @@ never calls a GTK function. See [Limitations](limitations.md) for why.
 | [<img src="../demos/counter.png" width="150">](../demos/counter.png) | `counter` | The canonical demo. One state atom, a pure `state -> hiccup` view, handlers as data. The whole model in a window you can click through in ten seconds. |
 | [<img src="../demos/widgets.png" width="150">](../demos/widgets.png) | `widgets` | Every tag the renderer registers, in one window — `:vbox`/`:hbox`, `:label`, `:separator`, `:frame`, `:entry`, `:checkbutton`, `:button` (including a `:sensitive false` one) and a `:scrolled` list. `:separator` and `:scrolled` appear in no other example, so this is the only place either is shown running. Type a name and press Add, or tick the checkbutton first to add it in capitals. |
 | [<img src="../demos/temperature.png" width="150">](../demos/temperature.png) | `temperature` | The [7GUIs](https://eugenkiss.github.io/7guis/tasks/#temp) Temperature Converter: two linked numeric fields, each edit updating the other. Ported from glitter with its domain logic carried across unchanged — the pure half of a glitter app is renderer-agnostic, which is the point of the split. |
+| [<img src="../demos/flights.png" width="150">](../demos/flights.png) | `flights` | The [7GUIs](https://eugenkiss.github.io/7guis/tasks/#flight-booker) Flight Booker: a `:drop-down` choosing one-way/return, two strictly-validated date fields, and a Book button gated on both. An ill-formatted date is flagged inline in red — AppKit has no stylesheet, so glitter's `:class ["error"]` is replaced by a `:markup` label rather than silently lost. |
 | [<img src="../demos/todo.png" width="150">](../demos/todo.png) | `todo` | A task board on `glitter.nexus`: derived counts (3 total / 1 done / 2 left) computed inline on every re-render — glitter has no reactive-derivation primitive — plus an entry with `:change`/`:activate`, checkbutton toggles, and list rendering in a frame. The counts row is the whole point: it's recomputed from `:tasks` on every render, not tracked as separate state. |
 
 Every preview is a real screenshot of the demo running, not a mockup. They
@@ -30,13 +31,18 @@ full-size image.
 
 ### On 7GUIs
 
-`counter` and `temperature` are 7GUIs tasks 1 and 2. glitter also ships
-`flights`, `timer` and `crud`, and those do **not** port to this renderer as
-they stand — each needs a widget `glitter-uikit` does not register:
-`:drop-down` for the flight booker, `:progress-bar` and `:scale` for the
-timer, `:list-box` for CRUD. Adding them is a widget-layer change, not an
-examples change, and v1's scope is deliberately the nine tags
-`glimmer-uikit` had (see [Limitations](limitations.md)).
+`counter`, `temperature` and `flights` are 7GUIs tasks 1, 2 and 3.
+
+`timer` (task 4) needs one more piece of machinery rather than a widget: its
+`:scale` and `:progress-bar` both exist now, but it has to tick, and this
+renderer's only scheduling primitive is a ONE-SHOT `NSTimer` (`timer-after!`,
+used for `:auto-quit-ms`). A repeating timer plus a tick registry is a small
+addition, just not one this arc made.
+
+`crud` (task 5) needs `:list-box`, i.e. `NSTableView` — the one control
+deliberately left out of the widget expansion, because it needs a data source
+and a delegate bridged through the FFI, which is more work than every other
+tag combined.
 
 ## Live-AppKit smokes
 
