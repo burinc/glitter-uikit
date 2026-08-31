@@ -9,7 +9,7 @@
 ;; for a deps.edn project is `clojure -A:test:dev -Spath`, and this repo's :dev
 ;; alias exists to override glitter to :local/root "../glitter" — a sibling
 ;; checkout that exists on a maintainer's machine and nowhere else. On CI that
-;; fails with `Local lib io.github.burinc/glitter not found: ../glitter`, and
+;; fails with `Local lib io.github.jlt-commons/glitter not found: ../glitter`, and
 ;; every clojure-lsp gate fails with it, which is exactly what happened on the
 ;; first green-runner CI run. deps.edn's own :deps pins glitter by :git/sha, so
 ;; dropping :dev is what makes discovery reproducible off this machine.

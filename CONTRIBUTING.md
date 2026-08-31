@@ -8,7 +8,7 @@ and each one is written down because it cost real debugging to find.
 ## What this is
 
 An AppKit (native macOS) renderer for
-[glitter](https://github.com/burinc/glitter) (a Replicant-style Clojure UI
+[glitter](https://github.com/jlt-commons/glitter) (a Replicant-style Clojure UI
 library on [Jolt](https://github.com/jolt-lang/jolt)), ported from
 [glimmer-uikit](https://github.com/jolt-lang/glimmer-uikit) — the same
 renderer for [glimmer](https://github.com/jolt-lang/glimmer), glitter's
@@ -17,9 +17,20 @@ views (`NSWindow`, `NSStackView`, `NSButton`, `NSTextField`, etc.) and
 prop/event wiring is driven through glitter's `IRender`/`IMemory`
 protocols.
 
-Repo: `git@github.com:burinc/glitter-uikit.git`. Own copyright (2026,
+Repo: `git@github.com:jlt-commons/glitter-uikit.git`. Own copyright (2026,
 Burin Choomnuan) — vendors ported code under `NOTICE.md`'s file-by-file
 attribution, not a fork of glimmer-uikit or jolt-lang.
+
+The deep documentation lives in [`docs/guide/`](docs/guide/index.md) and is
+published at <https://jlt-commons.github.io/glitter-uikit/>. Edit the Markdown
+here, never the site.
+
+Publishing is automatic. `.github/workflows/site.yml` builds the site on every
+pull request and deploys it when your change lands on `main`, so a docs change
+goes live on merge without anyone running anything. You can preview it locally
+with `bb site:serve` if you clone
+[jlt-commons/docs-engine](https://github.com/jlt-commons/docs-engine) alongside
+this repo, but the pull request build is the authority.
 
 ## Build & run
 
