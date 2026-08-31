@@ -52,8 +52,8 @@
         ;; version@0 info@8 retain@16 release@24 copyDescription@32
         ;; equal@40 hash@48 schedule@56 cancel@64 perform@72
         ctx (ffi/alloc 80)]
-    (doseq [off [0 8 16 24 32 40 48 56 64]] (ffi/write ctx :pointer off 0))
-    (ffi/write ctx :pointer 72 perform)
+    (doseq [off [0 8 16 24 32 40 48 56 64]] (ffi/write ctx :pointer 0 off))
+    (ffi/write ctx :pointer perform 72)
     (let [src (u/cf-run-loop-source-create ffi/null 0 ctx)
           rl  (u/cf-run-loop-get-main)]
       (u/cf-run-loop-add-source rl src (u/default-mode))
