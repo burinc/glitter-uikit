@@ -1,13 +1,15 @@
 # glitter-uikit
 
 An AppKit (native macOS) renderer for
-[glitter](https://github.com/burinc/glitter) — a Replicant-style Clojure UI
+[glitter](https://github.com/jlt-commons/glitter) — a Replicant-style Clojure UI
 library on [Jolt](https://github.com/jolt-lang/jolt). Ported from
 [glimmer-uikit](https://github.com/jolt-lang/glimmer-uikit), which does the
 same for [glimmer](https://github.com/jolt-lang/glimmer) (glitter's
 Reagent-style sibling). A data-driven registry maps hiccup tags to AppKit
 views, and glitter's reconciler drives prop/event wiring through the
 `IRender`/`IMemory` protocols.
+
+**Documentation:** <https://jlt-commons.github.io/glitter-uikit/>
 
 [<img src="docs/demos/counter.png" width="480">](docs/guide/examples.md)
 
@@ -78,7 +80,7 @@ Run via `jolt -M:counter`.
 
 **In CI, invoke the `-M:<alias>` form, not the task form** — `jolt -M:test`,
 `jolt -M:counter`, and so on — same non-propagating-exit-code caveat
-[glitter's own README](https://github.com/burinc/glitter#quick-start)
+[glitter's own README](https://github.com/jlt-commons/glitter#quick-start)
 documents (verified against jolt v0.6.3).
 
 ## Running
@@ -116,7 +118,7 @@ bb repl-live-smoke      # nREPL live editing
 ## Dependency modes
 
 `deps.edn` declares glitter as a pinned git coordinate
-(`io.github.burinc/glitter` at a fixed `:git/sha`). jolt fetches and
+(`io.github.jlt-commons/glitter` at a fixed `:git/sha`). jolt fetches and
 builds against that exact commit, so a fresh clone of this repo builds
 with no other setup — nothing needs to sit next to it on disk. This is
 the default, and what CI and every command in Quick start/Running above

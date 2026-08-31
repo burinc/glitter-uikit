@@ -12,7 +12,7 @@ live AppKit tree.
 ## Unit suite: `jolt -M:test` / `bb test`
 
 `test/glitter_uikit/test_runner.clj` is the entry point (`deps.edn`'s
-`:test` alias points `-m` at it). `-main` requires five namespaces and
+`:test` alias points `-m` at it). `-main` requires six namespaces and
 runs `clojure.test` against all of them:
 
 ```clojure
@@ -20,16 +20,17 @@ runs `clojure.test` against all of them:
  glitter-uikit.ffi-test
  glitter-uikit.container-test
  glitter-uikit.widget-test
- glitter-uikit.appkit-test]
+ glitter-uikit.appkit-test
+ glitter-uikit.controls-test]
 ```
 
-Run live: `jolt -M:test` (or `bb test`) currently reports **23 tests,
-77 assertions, 0 failures, 0 errors**.
+Run live: `jolt -M:test` (or `bb test`) currently reports **37 tests,
+127 assertions, 0 failures, 0 errors**.
 
 What each namespace covers:
 
 - **`scaffold-test`** (1 test) — proves the project resolves at all: the
-  `:local/root "../glitter"` dependency is on the classpath and its
+  pinned `glitter` dependency is on the classpath and its
   `IRender`/`IMemory` protocol maps have the expected shape (19
   `IRender` methods, 2 `IMemory` methods). Its own docstring puts it
   plainly: *"If this fails, nothing else in the repo can work."*
@@ -65,6 +66,12 @@ What each namespace covers:
   docstring is explicit about the boundary: *"The end-to-end render is
   covered by the live smokes, which need a GUI session and so cannot
   guard CI."*
+- **`controls-test`** (14 tests) — the controls added after v1's nine
+  tags: `:drop-down`, `:scale`, `:spin-button`, `:progress-bar`,
+  `:level-bar`, `:switch`, `:password-entry`, `:search-entry` and
+  `:image`. Every assertion reads the AppKit view's own property back
+  through a getter rather than checking that the spec's `:apply` ran, so
+  a spec that runs but sets nothing still fails.
 
 ## Live-AppKit smokes
 

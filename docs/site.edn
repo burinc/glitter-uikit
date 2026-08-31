@@ -1,0 +1,21 @@
+;; Configuration for the documentation site, read by the jlt-commons
+;; docs-engine (https://github.com/jlt-commons/docs-engine).
+;;
+;; Build it locally with `bb site:serve`. CI builds and publishes it from
+;; .github/workflows/site.yml.
+{;; :base-path is what makes this a project site rather than an org one.
+ ;; The site is served at https://jlt-commons.github.io/glitter-uikit/, so
+ ;; every URL the engine emits needs that prefix. Leave it out and the
+ ;; pages still render, but each one loads the ORGANIZATION site's
+ ;; stylesheet and every image 404s.
+ :base-path   "/glitter-uikit"
+
+ :title       "glitter-uikit"
+ :description "An AppKit renderer for glitter: the same Replicant-style state atom, pure state -> hiccup view, and handlers-as-data model driving native macOS NSView widgets. Native Clojure on Chez Scheme, no JVM."
+
+ ;; docs/demos holds the recorded GIFs and still frames the guide pages
+ ;; embed. Without this the pages render with every image broken.
+ :asset-dirs  ["demos"]}
+
+;; No :home-template. The engine renders docs/guide/index.md as the homepage,
+;; which is what this project's site has always done.

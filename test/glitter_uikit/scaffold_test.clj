@@ -1,12 +1,12 @@
 (ns glitter-uikit.scaffold-test
-  "Proves the project resolves: glitter (the :local/root dependency) is on the
+  "Proves the project resolves: glitter (the pinned git dependency) is on the
   classpath and its toolkit-agnostic half loads. If this fails, nothing else in
   the repo can work — deps.edn or the sibling checkout is wrong."
   (:require [clojure.test :refer [deftest is testing]]
             [glitter.protocols :as proto]))
 
 (deftest glitter-dependency-resolves
-  (testing "glitter.protocols/IRender is reachable through the :local/root dep"
+  (testing "glitter.protocols/IRender is reachable through the pinned dep"
     (is (some? proto/IRender))
     ;; CORRECTION (pre-dispatch scan, 2026-08-20): a Jolt protocol map's :name
     ;; is an UN-namespaced symbol whose whole name part is the literal string

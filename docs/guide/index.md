@@ -3,7 +3,7 @@
 ## Why this exists
 
 `glitter-uikit` is an AppKit (native macOS) renderer for
-[glitter](https://github.com/burinc/glitter). Its upstream source,
+[glitter](https://github.com/jlt-commons/glitter). Its upstream source,
 [glimmer-uikit](https://github.com/jolt-lang/glimmer-uikit), applies
 Reagent's model (ratoms, automatic dependency tracking, component-local
 state) to AppKit; this project deliberately applies a different model —
@@ -109,7 +109,7 @@ against the previous vdom and issues the minimal set of `IRender`/
 - [glimmer-uikit](https://github.com/jolt-lang/glimmer-uikit) — the
   Reagent-style sibling this project forked its AppKit FFI/widget layer
   from.
-- [glitter](https://github.com/burinc/glitter) — the source of
+- [glitter](https://github.com/jlt-commons/glitter) — the source of
   `glitter.core`'s reconciler and the GTK4 renderer this project mirrors
   the structure of.
 - `README.md` (repo root) — feature overview, quick start, requirements,

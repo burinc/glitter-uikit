@@ -345,7 +345,7 @@ specific, plausible failure point rather than claiming a clean bill of
 health: the job checks out this repo, then tries to check out `glitter`
 (needed for `deps.edn`'s `:local/root "../glitter"`) using the job's
 default `GITHUB_TOKEN`, which GitHub scopes to the triggering repository
-only. If `burinc/glitter` is private, that second checkout has no
+only. If `jlt-commons/glitter` is private, that second checkout has no
 credentials to succeed with, and the workflow file says so directly:
 
 > No GitHub Actions run has been performed for this project ... so this

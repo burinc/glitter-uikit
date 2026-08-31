@@ -31,8 +31,8 @@
  ;; so `jolt -M:dev:test` resolves against a sibling checkout for the
  ;; co-development loop, while every other invocation (including CI and
  ;; anyone else's first build) resolves the pin below.
- :deps {io.github.burinc/glitter
-        {:git/url "https://github.com/burinc/glitter"
+ :deps {io.github.jlt-commons/glitter
+        {:git/url "https://github.com/jlt-commons/glitter"
          :git/sha "33713d607d11cc1fbf8cda237c0b6f251ac43388"}}
 
  ;; Each runnable has its own alias with :main-opts (jolt's -M:alias form needs
@@ -43,7 +43,7 @@
            ;; `../glitter` checkout next to this one; nobody outside this
            ;; machine needs it or has it.
            :dev {:override-deps
-                 {io.github.burinc/glitter {:local/root "../glitter"}}}
+                 {io.github.jlt-commons/glitter {:local/root "../glitter"}}}
 
            :test    {:extra-paths ["test" "examples"]
                      :main-opts ["-m" "glitter-uikit.test-runner"]}
