@@ -74,12 +74,26 @@ permissions:
 # workflow_dispatch run and the jolt-version input, which overrides this for
 # that run only.
 #
-# 0.8.0 is deliberately ahead of what is published. jolt-lang/jolt#802 reverses
-# ffi/write's last two arguments and this tree is written for the new order, so
-# an older jolt would write to the wrong place and report nothing; deps.edn's
-# :jolt/min-version refuses that rather than letting it run. v0.8.0 is tagged
-# but has no release yet, so this job stays red until jolt publishes one, then
-# goes green with no further edit here.
+# The pin reads 0.8.0 because jolt-lang/jolt#802 reverses ffi/write's last two
+# arguments and this tree is written for the new order. An older jolt writes to
+# the wrong place and reports nothing, so installing one here is not a thing to
+# leave to whatever happens to be newest on the day.
+#
+# THIS PIN IS THE ONLY THING GUARDING THAT. deps.edn's :jolt/min-version does
+# not, however much it reads like it does. jolt honours that key only from #804,
+# which merged 17 minutes AFTER #802 (22:24:59Z against 22:07:42Z on
+# 2026-08-31), so every runtime old enough to have the old write order is also
+# too old to read the key and ignores it. The two populations cannot overlap.
+#
+# Measured against the released v0.7.29, which predates both, with the 0.8.0
+# floor present in deps.edn: it did not refuse. It ran, dropped
+# glitter-uikit.appkit-test and glitter-uikit.controls-test with "ERROR
+# requiring ... : nil", and reported "Ran 19 tests. 61 assertions passed, 0
+# failures, 0 errors" against the 37 tests and 127 assertions a correct run
+# gives. A green half-suite on a runtime that writes to the wrong address is
+# the exact failure the floor looks like it prevents. Keep the floor for the
+# NEXT break, when both sides of it can read the key, and keep this pin for
+# this one.
 env:
   JOLT_VERSION: ${{ inputs.jolt-version || '0.8.0' }}
 

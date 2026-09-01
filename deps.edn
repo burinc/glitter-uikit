@@ -1,6 +1,21 @@
 {;; jolt.ffi/write takes the value BEFORE the offset as of jolt 0.8.0, and the
- ;; two spellings are both integers — an older runtime writes to the wrong
- ;; place rather than failing. Declare the floor so it refuses instead.
+ ;; two spellings are both integers, so an older runtime writes to the wrong
+ ;; place rather than failing.
+ ;;
+ ;; This floor does NOT catch that, and it is worth being exact about why,
+ ;; because it reads as though it does. jolt honours :jolt/min-version only
+ ;; from jolt-lang/jolt#804, which merged 17 minutes after #802 reversed the
+ ;; arguments. Anything old enough to have the old order is therefore too old
+ ;; to read this key, and skips it. Measured on the released v0.7.29 with this
+ ;; floor in place: it ran rather than refusing, dropped two test namespaces
+ ;; with "ERROR requiring ... : nil", and still reported 0 failures, on 19 of
+ ;; the suite's 37 tests.
+ ;;
+ ;; What actually pins the runtime is JOLT_VERSION in .github/workflows/ci.yml.
+ ;; The floor is here for the NEXT break, where both sides can read the key,
+ ;; and to state the requirement for anyone consuming this as a library. Note
+ ;; that a floor on a library binds its CONSUMERS as well, so raising it is not
+ ;; a local decision.
  :jolt/min-version "0.8.0"
 
  :paths ["src"]
