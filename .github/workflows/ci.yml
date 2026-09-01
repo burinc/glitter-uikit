@@ -57,12 +57,31 @@ on:
   workflow_dispatch:
     inputs:
       jolt-version:
-        description: "jolt version to install (blank = latest release)"
+        description: "jolt version to install (blank = the pinned JOLT_VERSION below)"
         required: false
         default: ""
 
 permissions:
   contents: read
+
+# jolt is pinned for the same reason clj-kondo, clojure-lsp and babashka are
+# pinned further down: a floating `latest` lets a release published overnight
+# turn CI red on a tree nobody touched.
+#
+# So moving this pin IS the cutover commit for a breaking jolt change. Bump it
+# and adapt the call sites together, in one reviewed commit, rather than letting
+# the release date decide when main breaks. Try a candidate first with a
+# workflow_dispatch run and the jolt-version input, which overrides this for
+# that run only.
+#
+# 0.8.0 is deliberately ahead of what is published. jolt-lang/jolt#802 reverses
+# ffi/write's last two arguments and this tree is written for the new order, so
+# an older jolt would write to the wrong place and report nothing; deps.edn's
+# :jolt/min-version refuses that rather than letting it run. v0.8.0 is tagged
+# but has no release yet, so this job stays red until jolt publishes one, then
+# goes green with no further edit here.
+env:
+  JOLT_VERSION: ${{ inputs.jolt-version || '0.8.0' }}
 
 jobs:
   lint:
@@ -110,20 +129,43 @@ jobs:
           ls -1 "$(brew --prefix)/lib" | grep -E 'libgtk-4|libglib-2\.0|libgobject-2\.0|libgio-2\.0' || true
           echo "::endgroup::"
 
-      # Official install script from jolt's README. Passed through env rather
-      # than interpolated into the script body, so the input cannot be used for
-      # shell injection.
+      # Official install script from jolt's README, which owns the archive
+      # naming and verifies the checksum. $JOLT_VERSION comes from the
+      # workflow-level env above and is read by the script rather than
+      # interpolated into it, so the dispatch input cannot inject shell.
+      #
+      # Fetched from api.github.com, NOT raw.githubusercontent.com. The raw
+      # host answers anonymous requests out of a pool shared across all of
+      # GitHub's hosted runners, and it returned 403 twice on 2026-08-31 with
+      # `curl: (56) The requested URL returned error: 403`, on main at 06:01Z
+      # and on pull request #3 at 22:19Z. Both times every later step skipped,
+      # so the red X said nothing about the tree. The API host takes the
+      # workflow token, which bills the request to this repo's own quota. It
+      # serves byte-identical content: verified with `diff` against the raw
+      # host, 204 lines, no difference.
+      #
+      # Retried anyway, because one 403 should not cost a whole macOS run.
       - name: Install jolt
         env:
-          JOLT_VERSION: ${{ inputs.jolt-version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [ -n "$JOLT_VERSION" ]; then
-            curl -sSL https://raw.githubusercontent.com/jolt-lang/jolt/main/install \
-              | bash -s -- --version "$JOLT_VERSION"
-          else
-            curl -sSL https://raw.githubusercontent.com/jolt-lang/jolt/main/install | bash
-          fi
+          : "${JOLT_VERSION:?empty; the workflow-level pin did not resolve}"
+          for attempt in 1 2 3; do
+            if curl -fsSL \
+                 -H "Authorization: Bearer $GH_TOKEN" \
+                 -H "Accept: application/vnd.github.raw" \
+                 https://api.github.com/repos/jolt-lang/jolt/contents/install \
+                 -o "$RUNNER_TEMP/jolt-install"; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "could not fetch jolt's install script after 3 attempts" >&2
+              exit 1
+            fi
+            sleep $((attempt * 5))
+          done
+          bash "$RUNNER_TEMP/jolt-install" --version "$JOLT_VERSION"
           jolt --version
 
       # Pinned to match what the maintainer runs locally and what the
