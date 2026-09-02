@@ -95,7 +95,7 @@ permissions:
 # NEXT break, when both sides of it can read the key, and keep this pin for
 # this one.
 env:
-  JOLT_VERSION: ${{ inputs.jolt-version || '0.8.0' }}
+  JOLT_VERSION: ${{ inputs.jolt-version || '0.8.1' }}
 
   # Which jolt repository to install FROM. Upstream unless overridden, which is
   # every ordinary run.
