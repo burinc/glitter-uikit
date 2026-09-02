@@ -97,6 +97,21 @@ permissions:
 env:
   JOLT_VERSION: ${{ inputs.jolt-version || '0.8.0' }}
 
+  # Which jolt repository to install FROM. Upstream unless overridden, which is
+  # every ordinary run.
+  #
+  # It exists so this project can be built against an UNRELEASED jolt. jolt's
+  # install script resolves --version to a published release, and only releases
+  # exist upstream, so a nightly lives on whichever fork produced it. Setting the
+  # repository variable JOLT_REPO points both the installer fetch and the
+  # download at that fork.
+  #
+  # Passed as an env var rather than a --repo flag, so one command covers both:
+  # upstream's installer does not know JOLT_REPO and ignores it, while a fork's
+  # installer that supports it honours it. A flag would fail against upstream,
+  # which rejects unknown flags.
+  JOLT_REPO: ${{ vars.JOLT_REPO || 'jolt-lang/jolt' }}
+
 jobs:
   lint:
     name: clj-kondo
@@ -169,7 +184,7 @@ jobs:
             if curl -fsSL \
                  -H "Authorization: Bearer $GH_TOKEN" \
                  -H "Accept: application/vnd.github.raw" \
-                 https://api.github.com/repos/jolt-lang/jolt/contents/install \
+                 "https://api.github.com/repos/${JOLT_REPO}/contents/install" \
                  -o "$RUNNER_TEMP/jolt-install"; then
               break
             fi
