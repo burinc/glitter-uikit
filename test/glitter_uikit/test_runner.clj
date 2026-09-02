@@ -38,14 +38,34 @@
                      glitter-uikit.container-test
                      glitter-uikit.widget-test
                      glitter-uikit.appkit-test
-                     glitter-uikit.controls-test]]
+                     glitter-uikit.controls-test]
+        ;; A namespace that fails to REQUIRE used to be printed and then
+        ;; forgotten. run-tests only ever sees what loaded, so its counters
+        ;; cannot tell a namespace that does not exist from one that would not
+        ;; compile, and the suite reported zero failures on half a suite.
+        ;;
+        ;; Not hypothetical. On jolt v0.7.29, whose ffi/write takes its last two
+        ;; arguments the other way round, appkit-test and controls-test both
+        ;; fail to load and this runner exited 0 on 19 of its 37 tests. CI was
+        ;; green against a runtime the code cannot run on.
+        broken (atom [])]
     (doseq [ns namespaces]
       (try (require ns :reload)
            (catch Exception e
+             (swap! broken conj ns)
              (println "ERROR requiring" ns ":" (ex-message e)))))
-    (let [results (apply t/run-tests namespaces)
-          failed (+ (:fail results 0) (:error results 0))]
+    (let [loaded  (remove (set @broken) namespaces)
+          ;; (apply t/run-tests '()) is (t/run-tests), which tests the CURRENT
+          ;; namespace and reports a cheerful zero. Guard the empty case.
+          results (if (seq loaded)
+                    (apply t/run-tests loaded)
+                    {:test 0 :pass 0 :fail 0 :error 0})
+          failed  (+ (:fail results 0) (:error results 0) (count @broken))]
       (println "----")
+      (when (seq @broken)
+        (println "FAILED TO LOAD:" (count @broken) "of" (count namespaces)
+                 "namespaces:" (pr-str @broken))
+        (println "  a namespace that will not load is a failure, not an absence"))
       (println "tests:" (:test results 0)
                "assertions:" (:pass results 0) "passed /"
                failed "failed")
