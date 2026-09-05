@@ -257,3 +257,11 @@ glitter.gtk performs for its own `:markup` prop.) The `insert-before`
 single-branch design (see gotcha #4) means keyed re-orders work but the
 single-branch shape (no reorder API separate from insert) is less obvious
 than GTK's explicit `gtk_box_reorder_child_after` call.
+
+## Licensing
+
+glitter-uikit is released under the Eclipse Public License 2.0 (`EPL-2.0`); see
+[`LICENSE`](LICENSE). It was MIT until 2026-09-05. By contributing, you agree your
+contribution is licensed under those terms. The files ported from glimmer-uikit
+are recorded in [`NOTICE.md`](NOTICE.md) and are not covered by that grant; see
+the [porting and attribution guide](docs/guide/porting-and-attribution.md).

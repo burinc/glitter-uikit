@@ -236,3 +236,18 @@ natives-free `glitter-core`** — the toolkit-agnostic half of glitter
 `console-logger`, `env`, `nexus/*`) — exactly the split upstream glimmer made at
 its own v0.1.0, with glitter (GTK4) and glitter-uikit (AppKit) both depending on
 it. Deferred out of this arc because it touches glitter and glitter-gl.
+
+## Licence
+
+Copyright (c) 2026 Burin Choomnuan.
+
+glitter-uikit's own code is distributed under the
+[Eclipse Public License 2.0](LICENSE), matching the rest of jlt-commons and jolt
+itself. SPDX identifier: `EPL-2.0`. It was MIT until 2026-09-05.
+
+That grant covers this project's own code only. The files ported from
+glimmer-uikit are a separate question, recorded accurately in
+[`NOTICE.md`](NOTICE.md) and in the
+[porting and attribution guide](docs/guide/porting-and-attribution.md): upstream
+ships no LICENSE file, so no grant has been made for them, and nothing here
+claims otherwise.

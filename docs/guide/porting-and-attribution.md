@@ -94,14 +94,15 @@ glitter and b12n-rljlt — see glitter-gl's own NOTICE.md.
 
 ## Licensing
 
-`glitter-uikit` itself is **MIT-licensed** — see `LICENSE`, Copyright 2026 Burin
-Choomnuan. That grant covers this project's own code: the AppKit FFI bindings,
-the widget layer's reshaping, the renderer, the app loop, the examples and the
-docs.
+`glitter-uikit` itself is licensed under the **Eclipse Public License 2.0**; see
+`LICENSE`, Copyright 2026 Burin Choomnuan. It was MIT until 2026-09-05, when the
+whole of jlt-commons settled on EPL 2.0. That grant covers this project's own
+code: the AppKit FFI bindings, the widget layer's reshaping, the renderer, the
+app loop, the examples and the docs.
 
 That is a separate question from the status of the code ported IN, and the two
 must not be run together. Upstream `glimmer-uikit` ships **no LICENSE file**, so
 absent one, default copyright reserves all rights and no grant has been made for
 those files. `NOTICE.md` records that accurately and file by file. This
-project's MIT grant does not extend to the upstream material it vendors, and
+project's EPL 2.0 grant does not extend to the upstream material it vendors, and
 nothing here should be read as claiming otherwise.
